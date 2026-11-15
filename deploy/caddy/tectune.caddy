@@ -1,0 +1,46 @@
+# ============================================================================
+# tectune.com.br — Tectune (cifras, setlists e show ao vivo)
+#
+# Snippet do INGRESS COMPARTILHADO da VPS (container ingress-caddy), instalado em
+# /srv/apps/ingress/caddy/conf.d/tectune.caddy por:
+#
+#   sh deploy/reload-caddy.sh
+#
+# Contrato do conf.d: domínio LITERAL, `reverse_proxy dynamic a` por nome de
+# container e o app na network `ingress`.
+#
+# DNS: nuvem CINZA (DNS only) na Cloudflare, obrigatório. O Caddy emite e renova
+# o certificado via HTTP-01; com a nuvem laranja a emissão falha.
+# ============================================================================
+
+www.tectune.com.br {
+	redir https://tectune.com.br{uri} permanent
+}
+
+tectune.com.br {
+	encode zstd gzip
+
+	# a API aceita no máximo 1 MB (express.json); folga para o proxy
+	request_body {
+		max_size 2MB
+	}
+
+	# CSP, X-Frame-Options e companhia vêm do próprio app (apps/web/src/security.js)
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+		-X-Powered-By
+	}
+
+	# `dynamic a` re-resolve o container a cada 10s: um --force-recreate troca o IP
+	# e, sem isso, o Caddy ficaria em 502. O WebSocket do show ao vivo (/api/live)
+	# passa pelo mesmo proxy.
+	reverse_proxy {
+		dynamic a {
+			name tectune-app
+			port 3000
+			refresh 10s
+		}
+		flush_interval -1
+	}
+}

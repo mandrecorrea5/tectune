@@ -1,16 +1,24 @@
-# Produção: Cloudflare → Caddy (HTTPS, porta 443) → app (Node) → Postgres
-# Subir:   docker compose -f docker-compose.prod.yml up -d --build
-# (o script scripts/deploy.sh faz isso e mais as checagens)
+# Produção na VPS compartilhada (187.41.102.127), em /srv/apps/tectune.
+#
+#   internet ──▶ ingress-caddy (80/443, Let's Encrypt; stack "ingress" da VPS)
+#                   └─ network `ingress` ──▶ tectune-app:3000 ──▶ tectune-postgres
+#
+# - Nenhuma porta é publicada no host: só o ingress-caddy fala com o app.
+# - O roteamento mora em deploy/caddy/tectune.caddy (instalado por deploy/reload-caddy.sh).
+# - A network externa `ingress` já existe na VPS (docker network create ingress).
+#
+# Deploy: GitHub Actions → ssh deploy@vps "deploy <sha>" → deploy/remote-deploy.sh
 name: tectune
 
 services:
   db:
     image: postgres:16-alpine
+    container_name: tectune-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-tectune}
       POSTGRES_USER: ${POSTGRES_USER:-tectune}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (deploy/provision-env.sh)}
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -20,15 +28,19 @@ services:
       retries: 20
     shm_size: 128mb
     networks: [internal]
+    deploy:
+      resources:
+        limits: { memory: 512M }
     logging: &logging
       driver: json-file
-      options: { max-size: "10m", max-file: "5" }
+      options: { max-size: "10m", max-file: "3" }
 
   app:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
     image: tectune-app:latest
+    container_name: tectune-app
     restart: unless-stopped
     init: true
     depends_on:
@@ -41,31 +53,15 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
       SESSION_DAYS: ${SESSION_DAYS:-90}
       TZ: ${TZ:-America/Fortaleza}
-    networks: [internal]
-    logging: *logging
-
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    depends_on: [app]
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      DOMAIN: ${DOMAIN:-tectune.com.br}
-    env_file:
-      - path: deploy/cloudflare.env   # faixas de IP da Cloudflare (scripts/cloudflare-ips.sh)
-        required: false
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./deploy/certs:/certs:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    networks: [internal]
+    networks: [internal, ingress]
+    deploy:
+      resources:
+        limits: { memory: 384M }
     logging: *logging
 
   backup:
     image: postgres:16-alpine
+    container_name: tectune-backup
     restart: unless-stopped
     depends_on:
       db:
@@ -83,12 +79,16 @@ services:
       - ${BACKUP_DIR:-./backups}:/backups
     entrypoint: ["sh", "/backup.sh"]
     networks: [internal]
+    deploy:
+      resources:
+        limits: { memory: 256M }
     logging: *logging
 
 networks:
   internal:
+  ingress:
+    name: ingress
+    external: true
 
 volumes:
   db_data:
-  caddy_data:
-  caddy_config:

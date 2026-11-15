@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  # re-publicar o que já está no ar sem mudar código (ex.: depois de mexer no .env)
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   testes:
@@ -51,4 +56,51 @@ jobs:
       - name: Build da imagem Docker
         run: docker build -f apps/web/Dockerfile -t tectune-app:ci .
       - name: Validar docker-compose.prod.yml
-        run: POSTGRES_PASSWORD=x docker compose -f docker-compose.prod.yml config -q
+        run: |
+          docker network create ingress
+          POSTGRES_PASSWORD=x docker compose -f docker-compose.prod.yml config -q
+
+  deploy:
+    name: Deploy
+    needs: [testes, imagem]
+    # PR nunca publica; push na main e workflow_dispatch sim
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-tectune
+      cancel-in-progress: false
+    steps:
+      # A chave do CI é travada no servidor (`restrict,command=`): só consegue rodar
+      # /usr/local/bin/tectune-deploy, que aceita apenas "deploy <sha>" (deploy/remote-deploy.sh).
+      - name: Chave SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$SSH_KEY" ]; then echo "::warning::VPS_SSH_KEY não configurado — deploy pulado"; echo "SKIP=1" >> "$GITHUB_ENV"; exit 0; fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      # publica exatamente o commit que este run validou
+      - name: Publicar
+        if: env.SKIP != '1'
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes \
+            "$USER@$HOST" "deploy ${{ github.sha }}"
+
+      - name: Smoke test
+        if: env.SKIP != '1'
+        run: |
+          for i in $(seq 1 24); do
+            code=$(curl -s -o /dev/null --connect-timeout 3 --max-time 10 -w "%{http_code}" https://tectune.com.br/api/health || echo 000)
+            echo "health $i: $code"; [ "$code" = "200" ] && break; sleep 5
+          done
+          [ "$code" = "200" ] || { echo "::error::/api/health não respondeu 200"; exit 1; }
+          code=$(curl -s -o /dev/null -w "%{http_code}" https://tectune.com.br/); echo "home: $code"; [ "$code" = "200" ]
+          loc=$(curl -s -o /dev/null -w "%{redirect_url}" https://www.tectune.com.br/); echo "www → $loc"; [ "$loc" = "https://tectune.com.br/" ]
