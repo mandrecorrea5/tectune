@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.*
+!.env.example
+!.env.production.example
+apps/mobile/dist/
+apps/mobile/.expo/
+apps/mobile/web-build/
+apps/mobile/ios/
+apps/mobile/android/
+.DS_Store
+*.log
+
+# produção: certificados, IPs gerados e backups nunca vão para o git
+deploy/certs/*
+!deploy/certs/README.txt
+deploy/cloudflare.env
+backups/

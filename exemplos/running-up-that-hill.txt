@@ -1,0 +1,84 @@
+título: Running Up That Hill
+artista: Jorn
+tom: Bbm
+bpm: 120
+compasso: 4/4
+formato: pauta
+obs: Troque o texto entre parênteses pela letra. "voz 3: …" = compasso 3 da seção; "voz 1 [2]: …" = compasso 1 na 2ª vez da repetição. Posições estimadas — confira no ensaio.
+
+[Intro]
+ |: E | Gb | 1-3. Abm | % :| x4
+ | 4. Abm D | Db Db/B - Gb |
+[Verso]
+ | Bb | Gb Ab | Bbm Ab/C | Gb Ab |
+ | Bbm  E |Gb Ab | Bbm Db | Gb Ab |
+voz 1: (verso 1 · frase 1)
+voz 3: (verso 1 · frase 2)
+voz 5: (verso 1 · frase 3)
+voz 7: (verso 1 · frase 4)
+[pre-refrão]
+ | Gb Db/F | Ebm |Gb Db/F | Ebm | Ebm |
+voz 1: (pré-refrão 1 · frase 1)
+voz 3: (pré-refrão 1 · frase 2)
+[refrão]
+ |: Gb | Ab | Bbm | 1-3. % :| x4
+voz 1 [1]: (refrão 1 · 1ª vez · frase 1)
+voz 3 [1]: (refrão 1 · 1ª vez · frase 2)
+voz 1 [2]: (refrão 1 · 2ª vez · frase 1)
+voz 3 [2]: (refrão 1 · 2ª vez · frase 2)
+voz 1 [3]: (refrão 1 · 3ª vez · frase 1)
+voz 3 [3]: (refrão 1 · 3ª vez · frase 2)
+voz 1 [4]: (refrão 1 · 4ª vez · frase 1)
+voz 3 [4]: (refrão 1 · 4ª vez · frase 2)
+[Verso]
+ | Gb Ab | Bbm Ab/C | Gb Ab | Bbm  E  |
+ | Gb Ab | Bbm Db | Gb Ab | Bbm Ab/C |
+ | Gb Ab | Bbm  E | Gb Ab |
+voz 1: (verso 2 · frase 1)
+voz 3: (verso 2 · frase 2)
+voz 5: (verso 2 · frase 3)
+voz 7: (verso 2 · frase 4)
+voz 9: (verso 2 · frase 5)
+[pre-refrão]
+ |: Gb Db/F | Ebm :| x3
+voz 1 [1]: (pré-refrão 2 · 1ª vez)
+voz 1 [2]: (pré-refrão 2 · 2ª vez)
+voz 1 [3]: (pré-refrão 2 · 3ª vez)
+[refrão]
+ |: Gb | Ab | Bbm | % :| x3
+ | Gb | Ab | Bbm |
+voz 1 [1]: (refrão 2 · 1ª vez · frase 1)
+voz 3 [1]: (refrão 2 · 1ª vez · frase 2)
+voz 1 [2]: (refrão 2 · 2ª vez · frase 1)
+voz 3 [2]: (refrão 2 · 2ª vez · frase 2)
+voz 1 [3]: (refrão 2 · 3ª vez · frase 1)
+voz 3 [3]: (refrão 2 · 3ª vez · frase 2)
+voz 5: (refrão 2 · frase final)
+[pre-refrão]
+ |: Gb Db/F | Ebm :| x3
+voz 1 [1]: (pré-refrão 3 · 1ª vez)
+voz 1 [2]: (pré-refrão 3 · 2ª vez)
+voz 1 [3]: (pré-refrão 3 · 3ª vez)
+[ponte]
+ | Gb | Ab | Bb Cm | Db |
+ | Gb | Ab | Bb| % |
+voz 1: (ponte · frase 1)
+voz 3: (ponte · frase 2)
+voz 5: (ponte · frase 3)
+voz 7: (ponte · frase 4)
+[solo]
+ |: Gb | Ab | Bbm | % :| x2 |
+[refrão]
+ | Gb | Ab | Bbm - | -   |
+ |: Gb | Ab | 1,2. Bbm | % :| x3
+voz 1: (refrão final · abertura)
+voz 5 [1]: (refrão final · 1ª vez · frase 1)
+voz 7 [1]: (refrão final · 1ª vez · frase 2)
+voz 5 [2]: (refrão final · 2ª vez · frase 1)
+voz 7 [2]: (refrão final · 2ª vez · frase 2)
+voz 5 [3]: (refrão final · 3ª vez · frase 1)
+[final]
+ | Ab D | Db Db/B |Ab D | Db Db/B |
+ | Bb E | Eb Eb/Db | Bb E | Eb Eb/Db |
+ | Bb F | Gb Ab |
+ |: Bb F | Gb Ab  F _ :| x4

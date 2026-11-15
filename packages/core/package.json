@@ -1,0 +1,10 @@
+{
+  "name": "@tectune/core",
+  "version": "1.0.0",
+  "description": "Núcleo do Tectune: parser, compasso, validação, transposição e roteiro de reprodução",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": { ".": "./src/index.js" },
+  "scripts": { "test": "node --test test/*.test.js" },
+  "license": "UNLICENSED"
+}

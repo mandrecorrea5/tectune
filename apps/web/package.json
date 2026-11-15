@@ -1,0 +1,21 @@
+{
+  "name": "tectune-web",
+  "version": "1.0.0",
+  "description": "Tectune — cifras em grade de compasso, setlists, PDF e show ao vivo",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/*.test.js",
+    "cli": "node src/cli.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.13.1",
+    "ws": "^8.23.0"
+  }
+}

@@ -1,0 +1,44 @@
+# Caddy na frente do app. A Cloudflare faz o HTTPS com o visitante; o Caddy faz o HTTPS
+# entre a Cloudflare e a VPS usando o "Origin Certificate" da Cloudflare (deploy/certs/).
+# Modo SSL na Cloudflare: Full (strict).
+{
+	# o certificado vem da Cloudflare: nada de Let's Encrypt aqui (o redirecionamento 80 → 443 continua)
+	auto_https disable_certs
+	servers {
+		# IP real do visitante (só aceito quando vem da Cloudflare)
+		trusted_proxies static {$CF_IPS:127.0.0.1/32}
+		client_ip_headers CF-Connecting-IP X-Forwarded-For
+	}
+}
+
+(seguranca) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}
+
+www.{$DOMAIN} {
+	tls /certs/origin.pem /certs/origin.key
+	import seguranca
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+{$DOMAIN} {
+	tls /certs/origin.pem /certs/origin.key
+	import seguranca
+
+	# só a Cloudflare fala com a VPS: acesso direto pelo IP é derrubado
+	@fora_da_cloudflare not remote_ip {$CF_IPS:0.0.0.0/0 ::/0}
+	abort @fora_da_cloudflare
+
+	encode zstd gzip
+	reverse_proxy app:3000 {
+		# WebSocket do show ao vivo (/api/live) passa direto
+		flush_interval -1
+	}
+	log {
+		output stdout
+		format console
+	}
+}

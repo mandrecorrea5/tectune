@@ -1,0 +1,12 @@
+# só o web e o núcleo entram na imagem
+**/node_modules
+apps/mobile
+.git
+.github
+.env
+.env.*
+deploy
+backups
+scripts
+exemplos
+*.md

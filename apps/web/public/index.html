@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tectune</title>
+<meta name="description" content="Tectune: cifras em grade de compasso, setlists, PDF e show ao vivo com a banda inteira no mesmo tempo.">
+<meta name="theme-color" content="#1C1917">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+<script src="vendor/jspdf.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
+  <div class="bandpick">
+    <select id="bandSelect" aria-label="Banda" title="Banda ativa"></select>
+    <button id="bandBtn" class="ghost" title="Membros, convites e conta">Banda</button>
+  </div>
+  <div class="slpick">
+    <select id="slSelect" aria-label="Setlist"></select>
+    <button id="slEdit" class="ghost" title="Editar setlist">Editar</button>
+    <button id="slNew">+ Nova setlist</button>
+  </div>
+  <div class="spacer"></div>
+  <span id="status" class="status"><i></i><span>Carregando…</span></span>
+  <button id="btnPdfSong">Ver PDF da música</button>
+  <button id="btnPdfSetlist" title="Configurar e imprimir só a lista de músicas">Folha do setlist</button>
+  <button id="btnPdfAll" class="primary">Ver PDF do show</button>
+</header>
+
+<div id="inviteBar" class="invitebar" hidden></div>
+<main id="main">
+  <section class="col songs">
+    <div class="colhead">
+      <div class="slinfo"><span id="slTitle">—</span><small id="slMeta"></small></div>
+    </div>
+    <div class="songbtns">
+      <button id="songNew">+ Nova música</button>
+      <button id="songLib">+ Da biblioteca</button>
+    </div>
+    <ol id="songList"></ol>
+  </section>
+
+  <section class="col editor">
+    <div class="colhead">
+      Cifra <span class="ro-note">· só leitura (você é membro desta banda)</span>
+      <span class="spacer"></span>
+      <span class="tgroup vseg" title="Como a cifra aparece na prévia, no palco e no PDF">Ver
+        <button id="vBox" type="button">Caixas</button><button id="vStaff" type="button">Pauta</button></span>
+      <span class="tgroup">Tom <button id="tDown" title="Descer meio tom">−½</button><button id="tUp" title="Subir meio tom">+½</button></span>
+      <span class="tgroup">Tamanho
+        <select id="scale" title="Tamanho da cifra na folha">
+          <option value="0">Auto (1 folha)</option>
+          <option value="100">100%</option><option value="95">95%</option><option value="90">90%</option>
+          <option value="85">85%</option><option value="80">80%</option><option value="75">75%</option>
+          <option value="70">70%</option><option value="65">65%</option><option value="60">60%</option>
+          <option value="55">55%</option><option value="50">50%</option>
+          <option value="45">45%</option><option value="40">40%</option><option value="35">35%</option><option value="30">30%</option>
+        </select>
+      </span>
+      <span class="tgroup">Compassos/linha
+        <select id="cols"><option>4</option><option>6</option><option>8</option></select>
+      </span>
+    </div>
+    <div id="issues" class="issues" hidden></div>
+    <textarea id="text" spellcheck="false" aria-label="Texto da cifra" disabled></textarea>
+    <details class="help">
+      <summary>Como escrever</summary>
+      <table>
+        <tr><td>título: / artista:</td><td>Cabeçalho da música. Também: <b>tom:</b>, <b>bpm:</b>, <b>compasso:</b>, <b>capo:</b>, <b>obs:</b></td></tr>
+        <tr><td>[Refrão] x2</td><td>Começa uma seção; o <b>x2</b> é opcional</td></tr>
+        <tr><td>&gt; texto</td><td>Observação da seção (dinâmica, quem toca, etc.)</td></tr>
+        <tr><td>| G | D | Em | C |</td><td>Uma linha de compassos. Cada <b>|</b> separa um compasso</td></tr>
+        <tr><td>compasso: 6/8</td><td>Define quantos tempos cabem em cada bloco: 4/4 = 4 semínimas, 3/4 = 3, 6/8 = 6 colcheias. Passou disso, é erro</td></tr>
+        <tr><td>| C G |</td><td>Dois acordes: o compasso é dividido igualmente (em 4/4, 2 tempos cada)</td></tr>
+        <tr><td>| C / / G |</td><td><b>/</b> = mais um tempo do acorde anterior: C nos 3 primeiros, G no último</td></tr>
+        <tr><td>| C D E F |</td><td>Um acorde por tempo (4/4)</td></tr>
+        <tr><td>| % |</td><td>Repete o compasso anterior</td></tr>
+        <tr><td>|: G | D :| x3</td><td>Ritornelo (barra de repetição), com nº de vezes opcional</td></tr>
+        <tr><td>| 1. C | 2. D |</td><td>Casa 1 / casa 2</td></tr>
+        <tr><td>|: A | B | C | 1-3. D :| x4 | 4. E |</td><td>Bloco tocado 4 vezes (16 compassos) com o último compasso diferente na 4ª vez. Casas aceitam <b>1-3.</b>, <b>1,2.</b>, <b>4.</b>; uma casa que vai até o <b>:|</b> cobre todos os compassos até ele</td></tr>
+        <tr><td>| D "breque" |</td><td>Anotação em cima do compasso</td></tr>
+        <tr><td>| C - |</td><td><b>-</b> (ou <b>pausa</b>) = pausa naquele tempo. <code>| - |</code> = compasso inteiro de pausa</td></tr>
+        <tr><td>| _ |</td><td>Compasso vazio · <b>N.C.</b> = sem acorde</td></tr>
+        <tr><td>formato: pauta</td><td>Mostra as cifras dentro do pentagrama, um bloco por compasso (botões <b>Caixas / Pauta</b> acima)</td></tr>
+        <tr><td>voz: texto</td><td>Entrada da voz na seção, com a letra (opcional) embaixo do compasso. <b>voz 5: texto</b> marca o compasso 5 da seção; várias linhas <b>voz:</b> sem número se espalham pela seção; <b>voz 5:</b> sem texto só marca a entrada</td></tr>
+        <tr><td>voz 1 [2]: texto</td><td>Letra de uma <b>passada</b> do ritornelo: compasso 1 na <b>2ª vez</b> (também vale <b>voz 1 2ª vez:</b>). Embaixo do compasso aparecem numeradas (1., 2., 3.…) e na visão Cantor cada vez mostra a sua</td></tr>
+        <tr><td>| Am {A2 c2 e2 a2} |</td><td>Frase com notas no compasso (notação ABC: <b>A2</b> = semínima, <b>A</b> = colcheia, <b>z</b> = pausa, <b>^F</b> sustenido, <b>_B</b> bemol). O sistema confere se as notas somam o compasso e transpõe junto com o tom</td></tr>
+      </table>
+    </details>
+  </section>
+
+  <section class="col preview">
+    <!-- modo Show: sem editor; para sair é preciso confirmar -->
+    <div class="showbar palco-only-flex">
+      <button id="showExit" type="button">Sair do show</button>
+      <span id="showTitle" class="showtitle"></span>
+      <span class="vseg sview" title="Visão deste aparelho">
+        <button id="svMusico" type="button">Músico</button><button id="svCantor" type="button">Cantor</button>
+      </span>
+      <button id="liveBtn" type="button" class="livebtn" title="Show ao vivo: o diretor dá o play e a banda acompanha"><i></i><span>Ao vivo</span></button>
+    </div>
+    <div class="colhead phead">
+      <span class="ptitle">Prévia da folha</span>
+      <span id="pages" class="pages" hidden></span>
+      <span class="spacer"></span>
+      <div class="pctl" id="pctl">
+        <button id="pPrev" class="ghost palco-only" title="Música anterior (←)">⏮</button>
+        <button id="pPlay" class="playbtn" title="Tocar / pausar (espaço)">▶</button>
+        <button id="pStop" class="ghost" title="Parar">■</button>
+        <span class="ptempo">
+          <button id="pSlower" class="ghost" title="Mais devagar">−</button>
+          <span id="pTempo" title="Clique para voltar a 100%">♩ = 90</span>
+          <button id="pFaster" class="ghost" title="Mais rápido">+</button>
+        </span>
+        <span class="ptom palco-only" title="Mudar o tom sem parar a música">Tom <b id="pKey">—</b>
+          <button id="pKeyDown" class="ghost" title="Descer meio tom">−½</button><button id="pKeyUp" class="ghost" title="Subir meio tom">+½</button>
+        </span>
+        <button id="pNext" class="ghost palco-only" title="Próxima música (→)">⏭</button>
+        <button id="pZoomOut" class="ghost palco-only" title="Diminuir">A−</button>
+        <button id="pZoomIn" class="ghost palco-only" title="Aumentar">A+</button>
+        <button id="pCount1" class="ghost ctoggle" title="Contagem de 1 compasso antes de começar (clique para ligar/desligar)">Contagem</button>
+        <button id="pPalco" title="Modo Show: tela cheia, sem editor, para tocar o show">▶ Modo Show</button>
+      </div>
+    </div>
+    <div class="pinfo"><span id="pInfo"></span><span class="pkeys">espaço: tocar/pausar · clique num compasso para começar dali</span></div>
+    <div class="scroll" id="pScroll"><div id="sheet" class="page"></div></div>
+    <div id="pCount" class="pcount" hidden><b>1</b><small>contagem</small></div>
+    <div id="pDone" class="pdone" hidden><span>Fim da música</span><button id="pDoneNext" class="primary">Próxima ▶</button></div>
+  </section>
+</main>
+
+<!-- Setlist: criar / editar -->
+<!-- login / cadastro -->
+<div id="authScreen" class="gate" hidden>
+  <aside class="gate-hero" aria-hidden="true">
+    <div class="brand big light"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
+    <div class="hero-mid">
+      <h1>O repertório da banda, compasso por compasso.</h1>
+      <p>Cifras em grade ou na pauta, setlists, PDF para imprimir e o Show ao vivo: o diretor dá o play e todo mundo acompanha.</p>
+      <div class="hero-grid">
+        <span>INTRO</span>
+        <div><i>Am</i><i>F</i><i>C</i><i>G</i></div>
+        <span>REFRÃO</span>
+        <div><i>F</i><i>G</i><i class="now">Am</i><i>%</i></div>
+      </div>
+    </div>
+    <p class="hero-foot">Admins editam · músicos acompanham · funciona no celular e no navegador</p>
+  </aside>
+  <main class="gate-main">
+    <form id="authForm" class="gatebox" novalidate>
+      <div class="brand big mobile-only"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
+      <div>
+        <h2 id="authTitle">Entrar</h2>
+        <p class="muted" id="authSub">Bem-vindo de volta! Entre para ver o repertório da sua banda.</p>
+      </div>
+      <label class="field" id="authNameL" hidden><span>Seu nome</span>
+        <input name="name" maxlength="80" autocomplete="name" placeholder="Como a banda te chama"></label>
+      <label class="field"><span>E-mail</span>
+        <input name="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required></label>
+      <label class="field"><span>Senha</span>
+        <span class="pw"><input name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="Sua senha">
+          <button type="button" id="pwToggle" class="pwtoggle" aria-label="Mostrar senha">Mostrar</button></span>
+        <small id="pwHint" class="hint" hidden>Pelo menos 6 caracteres.</small></label>
+      <p id="authErr" class="gateerr" role="alert" hidden></p>
+      <button type="submit" class="primary big" id="authSubmit">Entrar</button>
+      <p class="switch"><span id="authSwitchText">Ainda não tem conta?</span> <button type="button" id="authSwitch" class="link">Criar conta</button></p>
+    </form>
+  </main>
+</div>
+
+<!-- sem banda: criar a primeira ou aceitar um convite -->
+<div id="bandScreen" class="gate single" hidden>
+  <main class="gate-main">
+    <div class="gatebox">
+      <div class="brand big"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
+      <div>
+        <h2>Olá, <span id="bsName"></span>!</h2>
+        <p class="muted">Para começar, crie a sua banda ou entre numa banda que te convidou.</p>
+      </div>
+      <div id="bsInvites" class="invites"></div>
+      <form id="bsForm" class="stack">
+        <label class="field"><span>Nome da banda</span><input name="name" maxlength="120" required placeholder="Ex.: Banda do Marcos"></label>
+        <button type="submit" class="primary big">Criar banda</button>
+        <small class="hint">Você será o admin e poderá convidar os músicos que já têm conta.</small>
+      </form>
+      <p class="switch"><button type="button" id="bsLogout" class="link">Sair da conta</button></p>
+    </div>
+  </main>
+</div>
+
+<!-- banda: membros, convites e conta -->
+<dialog id="dlgBand" class="wide">
+  <h2>Banda</h2>
+  <form id="bandNameForm" class="row2">
+    <input name="name" maxlength="120" aria-label="Nome da banda">
+    <button type="submit" class="admin-only">Salvar nome</button>
+  </form>
+  <h3>Membros</h3>
+  <ul id="bandMembers" class="members"></ul>
+  <div class="admin-only">
+    <h3>Convidar</h3>
+    <form id="inviteForm" class="row2">
+      <input name="email" type="email" placeholder="E-mail de quem já tem conta" required>
+      <button type="submit" class="primary">Convidar</button>
+    </form>
+    <ul id="bandInvites" class="members"></ul>
+  </div>
+  <p class="muted"><b>Admins</b> editam músicas e setlists. <b>Membros</b> veem, tocam o Show e acompanham o ao vivo.</p>
+  <h3>Outra banda</h3>
+  <form id="newBandForm" class="row2">
+    <input name="name" maxlength="120" placeholder="Nome da nova banda" required>
+    <button type="submit">Criar banda</button>
+  </form>
+  <div class="dlg-actions">
+    <span class="acct" id="acct"></span>
+    <button type="button" id="logoutBtn" class="ghost">Sair da conta</button>
+    <button type="button" id="leaveBand" class="danger">Sair desta banda</button>
+    <span class="spacer"></span>
+    <button type="button" class="primary" data-close>Fechar</button>
+  </div>
+</dialog>
+
+<dialog id="dlgExit">
+  <h2>Sair do modo Show?</h2>
+  <p class="muted" id="exitText">O play é interrompido.</p>
+  <div class="dlg-actions"><span class="spacer"></span>
+    <button type="button" data-close>Continuar no show</button>
+    <button type="button" id="exitConfirm" class="primary">Sair</button>
+  </div>
+</dialog>
+
+<dialog id="dlgLive">
+  <h2>Show ao vivo</h2>
+  <p class="muted">O diretor musical dá o play e todos que estão seguindo acompanham a música descendo, cada um na sua visão
+    (celular, tablet ou navegador). Todos precisam estar conectados a este servidor e com esta setlist.</p>
+  <label>Seu nome<input id="liveName" maxlength="40" placeholder="Ex.: Marcos (baixo)"></label>
+  <div class="liveopts" id="liveOpts">
+    <button type="button" data-role="diretor"><b>Sou o diretor</b><small>Meu play comanda a banda</small></button>
+    <button type="button" data-role="seguir"><b>Seguir o diretor</b><small>A música desce sozinha com o play do diretor</small></button>
+    <button type="button" data-role="off"><b>Sozinho</b><small>Sem conexão com a banda</small></button>
+  </div>
+  <div id="liveMembers" class="livemembers"></div>
+  <div class="dlg-actions"><span class="spacer"></span><button type="button" class="primary" data-close>Pronto</button></div>
+</dialog>
+
+<dialog id="dlgSetlist">
+  <form id="formSetlist" method="dialog">
+    <h2 id="dlgSetlistTitle">Nova setlist</h2>
+    <label>Nome do show<input name="name" required maxlength="200" placeholder="Ex.: Casamento Ana & Pedro"></label>
+    <div class="two">
+      <label>Data<input name="event_date" type="date"></label>
+      <label>Compassos por linha<select name="cols"><option>4</option><option>6</option><option>8</option></select></label>
+    </div>
+    <label>Local<input name="venue" maxlength="200" placeholder="Ex.: Espaço Villa"></label>
+    <label>Observações<textarea name="notes" rows="3" maxlength="5000" placeholder="Horário, formação, passagem de som…"></textarea></label>
+    <div class="dlg-actions">
+      <button type="button" id="slDelete" class="danger">Excluir setlist</button>
+      <span class="spacer"></span>
+      <button type="button" data-close>Cancelar</button>
+      <button type="submit" class="primary">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Biblioteca de músicas -->
+<dialog id="dlgLib" class="wide">
+  <div class="libhead">
+    <h2>Biblioteca de músicas</h2>
+    <button type="button" data-close class="ghost">Fechar</button>
+  </div>
+  <input id="libSearch" type="search" placeholder="Buscar por título ou artista…">
+  <ul id="libList"></ul>
+</dialog>
+
+<!-- Visualizador de PDF -->
+<dialog id="dlgPdf" class="viewer">
+  <div class="vhead">
+    <div class="vtitle"><b id="pdfTitle"></b><small id="pdfPages"></small></div>
+    <span class="spacer"></span>
+    <a id="pdfOpen" class="btn ghost" target="_blank" rel="noopener">Abrir em nova aba</a>
+    <a id="pdfDownload" class="btn">Baixar PDF</a>
+    <button type="button" id="pdfPrint">Imprimir</button>
+    <button type="button" data-close class="primary">Fechar</button>
+  </div>
+  <div class="vbody">
+    <aside id="coverPanel" class="cpanel" hidden>
+      <h3>Folha do setlist</h3>
+      <p class="hint">Vale só para a lista de músicas e fica salvo neste setlist.</p>
+      <label class="cl">Visualização</label>
+      <div class="segs" id="coverLayout">
+        <button type="button" data-v="detalhada">Detalhada</button>
+        <button type="button" data-v="compacta">Compacta</button>
+        <button type="button" data-v="colunas">Duas colunas</button>
+      </div>
+      <label class="cl" for="coverScale">Tamanho da letra</label>
+      <div class="sizerow">
+        <button type="button" id="coverSmaller" title="Letra menor">A−</button>
+        <select id="coverScale"></select>
+        <button type="button" id="coverBigger" title="Letra maior">A+</button>
+      </div>
+      <p class="hint" id="coverFit"></p>
+      <label class="cl">Mostrar</label>
+      <div id="coverOpts" class="checks"></div>
+    </aside>
+    <iframe id="pdfFrame" title="Visualização do PDF"></iframe>
+  </div>
+</dialog>
+
+<div id="toast"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Tectune",
+    "slug": "tectune",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.com.tectune.app"
+    },
+    "android": {
+      "package": "br.com.tectune.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#1C1917",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-sharing",
+      "expo-sqlite"
+    ],
+    "scheme": "tectune",
+    "extra": {
+      "apiUrl": "https://tectune.com.br"
+    }
+  }
+}

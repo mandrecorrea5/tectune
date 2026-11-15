@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cifras
+          POSTGRES_USER: cifras
+          POSTGRES_PASSWORD: cifras
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U cifras" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Núcleo (packages/core)
+        working-directory: packages/core
+        run: npm test
+
+      - name: Dependências do web
+        working-directory: apps/web
+        run: npm ci
+
+      - name: API + testes de ponta a ponta
+        working-directory: apps/web
+        env:
+          DATABASE_URL: postgres://cifras:cifras@localhost:5432/cifras
+          BASE_URL: http://localhost:3000
+        run: |
+          node src/server.js > /tmp/api.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS localhost:3000/api/health && break; sleep 1; done
+          node --test test/*.test.js || { cat /tmp/api.log; exit 1; }
+
+  imagem:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build da imagem Docker
+        run: docker build -f apps/web/Dockerfile -t tectune-app:ci .
+      - name: Validar docker-compose.prod.yml
+        run: POSTGRES_PASSWORD=x docker compose -f docker-compose.prod.yml config -q

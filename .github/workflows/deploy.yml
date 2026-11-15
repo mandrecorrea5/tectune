@@ -1,0 +1,44 @@
+name: Deploy
+
+# Roda depois que o CI passa na main (ou manualmente na aba Actions).
+# Precisa dos secrets do repositório (Settings → Secrets and variables → Actions):
+#   VPS_HOST     IP ou nome da VPS
+#   VPS_USER     usuário de deploy (ex.: deploy)
+#   VPS_SSH_KEY  chave privada SSH desse usuário
+#   VPS_PORT     (opcional) porta do SSH, padrão 22
+#   VPS_APP_DIR  (opcional) pasta do projeto, padrão /opt/tectune
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-producao
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: producao
+    steps:
+      - name: Conferir secrets
+        id: check
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          if [ -z "$HOST" ]; then echo "VPS_HOST não configurado: deploy pulado"; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
+      - name: Deploy por SSH
+        if: steps.check.outputs.skip != '1'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          command_timeout: 20m
+          script: |
+            cd "${{ secrets.VPS_APP_DIR || '/opt/tectune' }}"
+            bash scripts/deploy.sh
