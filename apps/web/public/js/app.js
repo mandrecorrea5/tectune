@@ -249,7 +249,7 @@ function renderShow() {
     const n = sl.songs.length;
     meta.innerHTML = n
       ? `${n} ${n === 1 ? 'música' : 'músicas'}${total ? ` · ${Math.round(total / 60)} min de show` : ''} · <span class="okc">${ready} ${ready === 1 ? 'pronta' : 'prontas'}</span>${attn ? `, <span class="warnc">${attn} ${attn === 1 ? 'precisa' : 'precisam'} de atenção</span>` : ''}`
-      : 'Este show ainda não tem músicas.';
+      : '';
   }
   ['btnPdfAll', 'btnPdfSetlist'].forEach(id => { $(id).disabled = !sl || !sl.songs.length; });
   ['songNew', 'songLib', 'slEdit'].forEach(id => { $(id).disabled = !sl; });
@@ -265,8 +265,8 @@ function longDate(d) {
 
 function renderList() {
   const ol = $('songList');
-  if (!sl) { ol.innerHTML = `<li class="listempty">${GUEST ? 'Show indisponível.' : 'Crie um show para começar: <b>Novo show</b>, lá em cima.'}</li>`; return; }
-  if (!sl.songs.length) { ol.innerHTML = `<li class="listempty">Este show ainda não tem músicas.${isAdmin() ? '<br>Use <b>Nova música</b> ou traga uma <b>da biblioteca</b>.' : ''}</li>`; return; }
+  if (!sl) { ol.innerHTML = GUEST ? '<li class="listempty">Show indisponível.</li>' : `<li class="listempty bigempty"><b>Comece pelo seu primeiro show</b><span>Um show é a lista de músicas de um ensaio, uma apresentação ou do seu estudo.</span>${isAdmin() ? '<button type="button" class="accent" data-act="newshow">Criar meu primeiro show</button>' : ''}</li>`; return; }
+  if (!sl.songs.length) { ol.innerHTML = `<li class="listempty bigempty"><b>Este show ainda não tem músicas</b>${isAdmin() ? '<span>Crie uma cifra do zero ou traga uma que já está na biblioteca.</span><span class="row2"><button type="button" class="accent" data-act="newsong">Nova música</button><button type="button" data-act="lib">Da biblioteca</button></span>' : ''}</li>`; return; }
   ol.innerHTML = sl.songs.map((s, i) => {
     const p = parseSong(s.content), m = p.meta; const secs = songSecs(p); const [stc, stl] = songStatus(s.content);
     return `<li class="${i === cur ? 'on' : ''}" data-i="${i}" tabindex="0">
@@ -286,6 +286,10 @@ function renderList() {
 }
 $('songList').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('li[data-i]')) openSong(+e.target.dataset.i); });
 $('songList').addEventListener('click', async e => {
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'newshow') return openSetlistDialog('new');
+  if (act === 'newsong') return $('songNew').click();
+  if (act === 'lib') return $('songLib').click();
   const li = e.target.closest('li[data-i]'); if (!li) return;
   const i = +li.dataset.i; const a = e.target.closest('button')?.dataset.a;
   if (!a) { openSong(i); return; }
@@ -308,6 +312,7 @@ $('songList').addEventListener('click', async e => {
 
 function renderCurve() {
   const box = $('curve');
+  box.closest('.card').hidden = !sl || sl.songs.length < 2; // curva só faz sentido com 2 ou mais músicas
   if (!sl || !sl.songs.length) { box.innerHTML = '<span class="curveempty">Adicione músicas para ver a curva do show.</span>'; return; }
   const bpms = sl.songs.map(s => parseBpm(parseSong(s.content).meta.bpm));
   box.setAttribute('aria-label', 'BPM em ordem: ' + bpms.map(b => b || 'sem BPM').join(', '));
@@ -431,6 +436,7 @@ async function loadBandInfo() {
   try { bandInfo = await api('GET', '/bands/' + bandId); renderBand(); } catch (e) { /* sem banda ainda */ }
 }
 $('bandInvite').onclick = () => openBandDialog().then(() => setTimeout(() => $('inviteForm').email.focus(), 50));
+$('bandManage').onclick = openBandDialog;
 
 /* ---------------- ao vivo a partir da tela do show ---------------- */
 $('goLive').onclick = () => {
@@ -1160,7 +1166,7 @@ const AUTH_TEXT = {
   reset:    { title: 'Criar nova senha', sub: 'Escolha a senha nova. Depois disso você já entra na sua conta.', btn: 'Salvar senha e entrar', busy: 'Salvando…', sw: ['Não precisa mais?', 'Entrar'] },
 };
 function showAuth() {
-  $('bandScreen').hidden = true; $('authScreen').hidden = false; $('authErr').hidden = true;
+  $('authScreen').hidden = false; $('authErr').hidden = true;
   $('authForm').password.value = '';
   setTimeout(() => setAuthMode(authMode), 0);
 }
@@ -1273,11 +1279,11 @@ if (!GUEST) api('GET', '/auth/options').then(o => { canReset = !!o.passwordReset
 
 async function logout() {
   try { await api('POST', '/auth/logout'); } catch (e) { /* já saiu */ }
-  setToken(null); me = null; live.set({ role: 'off' }); $('dlgBand').close();
+  setToken(null); me = null; live.set({ role: 'off' }); $('dlgBand').close(); $('dlgAccount').close();
   navigator.serviceWorker?.controller?.postMessage({ t: 'logout' }); // apaga o repertório guardado para uso offline
   setlists = []; sl = null; cur = -1; showAuth();
 }
-$('bsLogout').onclick = logout; $('logoutBtn').onclick = logout;
+$('logoutBtn').onclick = logout;
 
 const inviteHTML = i => `<div class="invite" data-inv="${i.id}"><span><b>${esc(i.invited_by || 'Alguém')}</b> convidou você para a banda <b>${esc(i.band_name)}</b></span>
   <button data-act="decline" class="ghost">Recusar</button><button data-act="accept" class="accent">Entrar na banda</button></div>`;
@@ -1291,37 +1297,32 @@ async function answerInvite(e) {
     await enterBand();
   } catch (ex) { toast(ex.message); }
 }
-$('bsInvites').addEventListener('click', answerInvite);
 $('inviteBar').addEventListener('click', answerInvite);
-$('bsForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  try { const r = await api('POST', '/bands', { name: e.target.name.value.trim() }); me = r; bandId = r.id; e.target.reset(); await enterBand(); }
-  catch (ex) { toast(ex.message); }
-});
-
-/** Entra na banda ativa (ou mostra a tela de criar banda / convites). */
+/** Entra na banda ativa. Toda conta tem ao menos a banda padrão ("<Nome>'s band"), criada pelo servidor. */
 async function enterBand() {
-  if (!me.bands.length) {
-    $('bandScreen').hidden = false; $('bsName').textContent = me.user.name;
-    $('bsInvites').innerHTML = me.invites.map(inviteHTML).join('');
-    return;
+  if (!me.bands.length) { // segurança: servidor antigo ou corrida — cria a banda padrão daqui
+    const first = (me.user.name || '').trim().split(/\s+/)[0] || 'Minha';
+    me = await api('POST', '/bands', { name: `${first}'s band` });
   }
-  $('bandScreen').hidden = true;
   if (!me.bands.some(b => b.id === bandId)) bandId = me.bands[0].id;
   try { localStorage.setItem(BAND_KEY, bandId); } catch (e) {}
   const band = me.bands.find(b => b.id === bandId);
   const admin = band.role === 'admin';
   document.body.classList.toggle('readonly', !admin); document.body.classList.toggle('isadmin', admin);
   $('text').readOnly = !admin;
-  $('acctBtn').textContent = initials(me.user.name); $('acctBtn').title = me.user.name;
+  $('acctBtn').textContent = $('acctRailAv').textContent = $('acctAv').textContent = initials(me.user.name);
+  $('acctName').textContent = me.user.name; $('acctEmail').textContent = me.user.email;
+  $('acctBandName').textContent = band.name + (admin ? ' · admin' : ' · membro');
   if (!live.name) live.name = me.user.name;
   $('bandSelect').innerHTML = me.bands.map(b => `<option value="${b.id}">${esc(b.name)}${b.role === 'admin' ? '' : ' (membro)'}</option>`).join('');
   $('bandSelect').value = bandId;
+  $('bandSelect').closest('.pick').hidden = me.bands.length < 2; // uma banda só: nada para escolher
   $('inviteBar').hidden = !me.invites.length; $('inviteBar').innerHTML = me.invites.map(inviteHTML).join('');
   live.set({ role: 'off' }); renderLive();
   bandInfo = null; loadBandInfo();
   await loadSetlists();
   updateStatus();
+  maybeTour();
 }
 $('bandSelect').addEventListener('change', async e => {
   await flush(); bandId = e.target.value; sl = null; setlists = [];
@@ -1339,14 +1340,17 @@ function renderBandDialog() {
     ${m.id === me.user.id ? '' : '<button data-act="rm" class="ghost" title="Tirar da banda">✕</button>'}` : ''}</li>`).join('');
   $('bandInvites').innerHTML = b.invites.map(i => `<li data-inv="${i.id}"><span class="who"><b>${esc(i.name)}</b> · convite pendente<small>${esc(i.email)}</small></span>
     <button data-act="cancel" class="ghost">Cancelar convite</button></li>`).join('');
-  $('acct').textContent = `${me.user.name} · ${me.user.email}`;
 }
 async function openBandDialog() {
   try { bandInfo = await api('GET', '/bands/' + bandId); renderBandDialog(); renderBand(); $('dlgBand').showModal(); }
   catch (e) { toast(e.message); }
 }
 $('bandBtn').onclick = openBandDialog;
-$('acctBtn').onclick = openBandDialog;
+function openAccount() { renderInstall(); $('dlgAccount').showModal(); }
+$('acctBtn').onclick = openAccount; $('acctRail').onclick = openAccount;
+$('acctBand').onclick = () => { $('dlgAccount').close(); openBandDialog(); };
+$('acctTour').onclick = () => { $('dlgAccount').close(); openTour(); };
+$('acctInstall').onclick = () => { $('dlgAccount').close(); doInstall(); };
 async function refreshMe() { me = await api('GET', '/me'); }
 $('bandNameForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -1374,6 +1378,9 @@ $('bandInvites').addEventListener('click', async e => {
   catch (ex) { toast(ex.message); }
 });
 $('leaveBand').onclick = async () => {
+  const b = $('leaveBand');
+  if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Confirmar: sair desta banda'; return; }
+  b.classList.remove('armed'); b.textContent = 'Sair desta banda';
   try { me = await api('DELETE', `/bands/${bandId}/members/${me.user.id}`); $('dlgBand').close(); bandId = null; await enterBand(); toast('Você saiu da banda'); }
   catch (ex) { toast(ex.message, 5000); }
 };
@@ -1451,6 +1458,53 @@ async function startGuest() {
   $('joinScreen').hidden = false;
 }
 
+/* ---------------- tutorial (primeiro acesso) ---------------- */
+const TOUR = [
+  { t: 'Bem-vindo ao Tectune', b: () => `Sua banda já está pronta: <b>${esc(me?.bands.find(x => x.id === bandId)?.name || 'sua banda')}</b>. Use para tocar com a banda ou para estudar sozinho. Dá para renomear, convidar gente ou criar outras bandas quando quiser.`, art: 'hello' },
+  { t: 'Monte o show', b: () => 'Um show é a lista de músicas de um ensaio, de uma apresentação ou do seu estudo. Adicione músicas, reordene com as setas e veja a <b>curva de energia</b> do repertório.', art: 'show' },
+  { t: 'Cifre tocando, não digitando', b: () => 'Na cifra, toque num compasso e depois num acorde da barra de baixo: ela já mostra os acordes do tom. Se preferir o teclado, digite o acorde: <b>Enter</b> põe e avança, <b>espaço</b> divide o compasso.', art: 'edit' },
+  { t: 'Mande um link para a banda', b: () => 'Em <b>Chame a banda</b>, crie o link do show e mande pelo WhatsApp ou mostre o QR. Cada músico abre no celular, escolhe o instrumento e pronto: sem baixar app, sem criar conta.', art: 'share' },
+  { t: 'Toque junto, no mesmo compasso', b: () => 'Toque em <b>Começar o show ao vivo</b> e dê o play: quem abriu o link vê a música descer junto com você, na visão de acordes ou de letra. No palco, a tela não apaga.', art: 'live' },
+];
+const TOUR_ART = {
+  hello: '<div class="ta-logo"><b></b><b></b><b></b><b></b></div>',
+  show: '<div class="ta-rows"><i><s>1</s><em>Velha Infância</em><u>G</u></i><i class="on"><s>2</s><em>Running Up That Hill</em><u>Bbm</u></i><i><s>3</s><em>Garota de Ipanema</em><u>F</u></i><div class="ta-curve"><span style="height:40%"></span><span style="height:70%" class="on"></span><span style="height:90%"></span><span style="height:55%"></span></div></div>',
+  edit: '<div class="ta-edit"><div class="ta-bars"><span>G</span><span class="on">Em</span><span>C</span><span>D</span></div><div class="ta-chips"><span><small>I</small>G</span><span><small>ii</small>Am</span><span class="on"><small>vi</small>Em</span><span><small>IV</small>C</span></div></div>',
+  share: '<div class="ta-share"><div class="ta-qr"></div><div class="ta-link">tectune.com.br/s/…</div><div class="ta-avs"><span style="background:#3DD6B5">JU</span><span style="background:#8FA8FF">RA</span><span style="background:#F2C14E">BI</span></div></div>',
+  live: '<div class="ta-live"><small>AGORA</small><b>Gb</b><div class="ta-beats"><i class="on"></i><i class="on"></i><i></i><i></i></div></div>',
+};
+let tourAt = 0;
+function renderTour() {
+  const st = TOUR[tourAt];
+  $('tourStep').textContent = `${tourAt + 1} de ${TOUR.length}`;
+  $('tourTitle').textContent = st.t; $('tourBody').innerHTML = st.b();
+  $('tourArt').innerHTML = TOUR_ART[st.art];
+  $('tourDots').innerHTML = TOUR.map((_, i) => `<i class="${i === tourAt ? 'on' : ''}"></i>`).join('');
+  $('tourBack').style.visibility = tourAt ? 'visible' : 'hidden';
+  const last = tourAt === TOUR.length - 1;
+  $('tourNext').textContent = last ? (setlists.length || !isAdmin() ? 'Começar' : 'Criar meu primeiro show') : 'Próximo';
+  $('tourSkip').hidden = last;
+}
+function openTour() { tourAt = 0; renderTour(); $('dlgTour').showModal(); }
+const tourKey = () => 'tectune-tutorial-' + (me?.user?.id || '');
+function finishTour() { try { localStorage.setItem(tourKey(), '1'); } catch (e) {} $('dlgTour').close(); }
+function maybeTour() { let seen = false; try { seen = localStorage.getItem(tourKey()) === '1'; } catch (e) {} if (!seen) openTour(); }
+$('tourNext').onclick = () => {
+  if (tourAt < TOUR.length - 1) { tourAt++; renderTour(); return; }
+  finishTour();
+  if (!setlists.length && isAdmin()) openSetlistDialog('new');
+};
+$('tourBack').onclick = () => { if (tourAt) { tourAt--; renderTour(); } };
+$('tourSkip').onclick = finishTour;
+$('dlgTour').addEventListener('cancel', () => { try { localStorage.setItem(tourKey(), '1'); } catch (e) {} });
+// deslizar para os lados no celular
+let tourX = null;
+$('dlgTour').addEventListener('touchstart', e => { tourX = e.touches[0].clientX; }, { passive: true });
+$('dlgTour').addEventListener('touchend', e => {
+  if (tourX == null) return; const dx = e.changedTouches[0].clientX - tourX; tourX = null;
+  if (dx < -50 && tourAt < TOUR.length - 1) { tourAt++; renderTour(); } else if (dx > 50 && tourAt) { tourAt--; renderTour(); }
+});
+
 /* ---------------- PWA: instalar, offline e tela acesa ---------------- */
 // quem instala pelo link do show abre direto no show (manifest próprio do link)
 if (GUEST) $('manifestLink').href = `/s/${GUEST}/manifest.webmanifest`;
@@ -1462,7 +1516,7 @@ let installEvt = null;
 function renderInstall() {
   const can = !standalone() && (!!installEvt || isIOS);
   let later = false; try { later = localStorage.getItem(INSTALL_KEY) === '1'; } catch (e) {}
-  $('installBtn').hidden = !can; $('installBar').hidden = !can || later;
+  $('installBtn').hidden = !can; $('installBar').hidden = !can || later; $('acctInstall').hidden = !can;
 }
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; renderInstall(); });
 addEventListener('appinstalled', () => { installEvt = null; renderInstall(); toast('Tectune instalado'); });

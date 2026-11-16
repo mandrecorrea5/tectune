@@ -48,6 +48,12 @@ test('contas, bandas e permissões', async t => {
     assert.equal(r.status, 200); assert.equal(r.body.user.name, 'Ana');
   });
 
+  await t.test('a conta já nasce com uma banda padrão (admin)', async () => {
+    const r = await call('GET', '/me', null, { token: A });
+    assert.equal(r.body.bands.length, 1);
+    assert.equal(r.body.bands[0].name, "Ana's band"); assert.equal(r.body.bands[0].role, 'admin');
+  });
+
   await t.test('criar banda (quem cria é admin) e editar repertório', async () => {
     const r = await call('POST', '/bands', { name: 'Banda ' + tag }, { token: A });
     assert.equal(r.status, 201); assert.equal(r.body.role, 'admin'); band = r.body.id;

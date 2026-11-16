@@ -126,6 +126,7 @@ function mount(app, { pool, tx, wrap }) {
       await c.query('DELETE FROM email_verifications WHERE user_id = $1', [rows[0].user_id]);
       return u.rows[0];
     });
+    await ensureBand(user); // a conta já entra com a banda padrão
     res.json({ token: await newSession(user.id), user: publicUser(user) });
   }));
 
@@ -208,6 +209,7 @@ function mount(app, { pool, tx, wrap }) {
       await c.query('DELETE FROM password_resets WHERE user_id = $1 AND used_at IS NULL', [rows[0].user_id]);
       return u.rows[0];
     });
+    await ensureBand(user); // a conta já entra com a banda padrão
     res.json({ token: await newSession(user.id), user: publicUser(user) });
   }));
 
@@ -216,8 +218,33 @@ function mount(app, { pool, tx, wrap }) {
     res.status(204).end();
   }));
 
+  /* ---------- banda padrão ---------- */
+  // ninguém fica sem banda: a conta já nasce com "<Nome>'s band" (dá para estudar sozinho,
+  // renomear depois ou entrar na banda de alguém). Quem sai de todas as bandas ganha uma de novo.
+  const defaultBandName = name => `${String(name || '').trim().split(/\s+/)[0] || 'Minha'}'s band`.slice(0, 120);
+  async function createBand(c, name, userId) {
+    const { rows } = await c.query('INSERT INTO bands (name) VALUES ($1) RETURNING id, name', [name]);
+    await c.query(`INSERT INTO band_members (band_id, user_id, role) VALUES ($1, $2, 'admin')`, [rows[0].id, userId]);
+    // a 1ª banda criada recebe o repertório que já existia antes das contas
+    const first = await c.query('SELECT count(*)::int AS n FROM bands');
+    if (first.rows[0].n === 1) {
+      await c.query('UPDATE songs SET band_id = $1 WHERE band_id IS NULL', [rows[0].id]);
+      await c.query('UPDATE setlists SET band_id = $1 WHERE band_id IS NULL', [rows[0].id]);
+      await c.query('UPDATE tombstones SET band_id = $1 WHERE band_id IS NULL', [rows[0].id]);
+    }
+    return rows[0];
+  }
+  async function ensureBand(user) {
+    await tx(async c => {
+      await c.query('SELECT 1 FROM users WHERE id = $1 FOR UPDATE', [user.id]); // evita criar duas em chamadas simultâneas
+      const n = await c.query('SELECT count(*)::int AS n FROM band_members WHERE user_id = $1', [user.id]);
+      if (!n.rows[0].n) await createBand(c, defaultBandName(user.name), user.id);
+    });
+  }
+
   /* ---------- eu: bandas e convites ---------- */
   async function me(user) {
+    await ensureBand(user);
     const [bands, invites] = await Promise.all([
       pool.query(`SELECT b.id, b.name, m.role, (SELECT count(*)::int FROM band_members x WHERE x.band_id = b.id) AS members
                     FROM band_members m JOIN bands b ON b.id = m.band_id WHERE m.user_id = $1 ORDER BY lower(b.name)`, [user.id]),
@@ -233,18 +260,7 @@ function mount(app, { pool, tx, wrap }) {
   app.post('/api/bands', requireUser, wrap(async (req, res) => {
     const name = String(req.body.name || '').trim().slice(0, 120);
     if (!name) throw new HttpError(400, 'Informe o nome da banda');
-    const band = await tx(async c => {
-      const { rows } = await c.query('INSERT INTO bands (name) VALUES ($1) RETURNING id, name', [name]);
-      await c.query(`INSERT INTO band_members (band_id, user_id, role) VALUES ($1, $2, 'admin')`, [rows[0].id, req.user.id]);
-      // a 1ª banda criada recebe o repertório que já existia antes das contas
-      const first = await c.query('SELECT count(*)::int AS n FROM bands');
-      if (first.rows[0].n === 1) {
-        await c.query('UPDATE songs SET band_id = $1 WHERE band_id IS NULL', [rows[0].id]);
-        await c.query('UPDATE setlists SET band_id = $1 WHERE band_id IS NULL', [rows[0].id]);
-        await c.query('UPDATE tombstones SET band_id = $1 WHERE band_id IS NULL', [rows[0].id]);
-      }
-      return rows[0];
-    });
+    const band = await tx(c => createBand(c, name, req.user.id));
     res.status(201).json({ ...band, role: 'admin', ...(await me(req.user)) });
   }));
 
