@@ -7,6 +7,7 @@
 # A chave do CI entra como usuário `deploy` (o mesmo dos outros sites da VPS),
 # em ~deploy/.ssh/authorized_keys, travada neste script:
 #   restrict,command="/usr/local/bin/tectune-deploy" ssh-ed25519 AAAA... github-actions-tectune
+# (nesta VPS: /root/.ssh/authorized_keys, VPS_USER=root)
 #
 # Uso (feito pelo workflow):        ssh deploy@host "deploy <sha-completo>"
 # Uso manual, logado na VPS:        SSH_ORIGINAL_COMMAND="deploy $(git -C /srv/apps/tectune rev-parse origin/main)" tectune-deploy

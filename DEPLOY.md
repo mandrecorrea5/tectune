@@ -24,11 +24,13 @@ Domínio `tectune.com.br` na Cloudflare (nameservers do Registro.br apontando pa
 
 ## 2. Primeira instalação na VPS (uma vez)
 
+Tudo roda como **root** (a VPS não tem usuário `deploy`).
+
 ```bash
-ssh vps-prd          # ou: ssh deploy@187.41.102.127
+ssh root@187.41.102.127
 ```
 
-**2.1 Acesso da VPS ao repositório (deploy key, só leitura).** Como o usuário `deploy`:
+**2.1 Acesso da VPS ao repositório (deploy key, só leitura):**
 
 ```bash
 ssh-keygen -t ed25519 -C "vps-tectune" -f ~/.ssh/github_tectune -N ""
@@ -45,17 +47,18 @@ No GitHub: **tectune → Settings → Deploy keys → Add deploy key**, cole a c
 
 ```bash
 git clone git@github-tectune:mandrecorrea5/tectune.git /srv/apps/tectune
+git config --global --add safe.directory /srv/apps/tectune
 cd /srv/apps/tectune
 sh deploy/provision-env.sh            # cria o .env com senha do banco forte (fica só na VPS)
 ```
 
-**2.2 Comando de deploy travado** (como root):
+**2.2 Comando de deploy travado:**
 
 ```bash
-sudo install -m 755 -o root -g root /srv/apps/tectune/deploy/remote-deploy.sh /usr/local/bin/tectune-deploy
+install -m 755 -o root -g root /srv/apps/tectune/deploy/remote-deploy.sh /usr/local/bin/tectune-deploy
 ```
 
-**2.3 Primeira subida** (como `deploy`):
+**2.3 Primeira subida:**
 
 ```bash
 cd /srv/apps/tectune
@@ -69,19 +72,20 @@ curl -sI https://tectune.com.br | head -1      # HTTP/2 200
    ```bash
    ssh-keygen -t ed25519 -C "github-actions-tectune" -f ~/.ssh/tectune_actions -N ""
    ```
-2. Na VPS, autorize essa chave **travada no comando de deploy** (uma linha em `~deploy/.ssh/authorized_keys`):
+2. Autorize essa chave na VPS **travada no comando de deploy** (do Mac, sem copiar e colar a chave à mão):
+   ```bash
+   echo "restrict,command=\"/usr/local/bin/tectune-deploy\" $(cat ~/.ssh/tectune_actions.pub)" | ssh root@187.41.102.127 'cat >> /root/.ssh/authorized_keys'
+   # teste: tem que rodar o deploy SEM pedir senha
+   ssh -i ~/.ssh/tectune_actions -o IdentitiesOnly=yes root@187.41.102.127 "deploy $(git rev-parse HEAD)"
    ```
-   restrict,command="/usr/local/bin/tectune-deploy" ssh-ed25519 AAAA...(conteúdo de tectune_actions.pub) github-actions-tectune
-   ```
+   Com o `restrict,command=` essa chave só consegue rodar o deploy do Tectune, mesmo entrando como root.
 3. No GitHub: **tectune → Settings → Secrets and variables → Actions**:
    | Secret | Valor |
    |---|---|
    | `VPS_HOST` | `187.41.102.127` |
-   | `VPS_USER` | `deploy` |
-   | `VPS_SSH_KEY` | conteúdo de `~/.ssh/tectune_actions` (chave **privada**) |
-   | `VPS_KNOWN_HOSTS` | saída de `ssh-keyscan -t ed25519 187.41.102.127` |
-
-   (Os mesmos nomes do felpma: `VPS_HOST`, `VPS_USER` e `VPS_KNOWN_HOSTS` podem ter o mesmo valor de lá.)
+   | `VPS_USER` | `root` |
+   | `VPS_SSH_KEY` | `pbcopy < ~/.ssh/tectune_actions` e cole (chave **privada**, sem `.pub`) |
+   | `VPS_KNOWN_HOSTS` | `ssh-keyscan 187.41.102.127 2>/dev/null \| grep -v '^#' \| pbcopy` e cole |
 
 Sem `VPS_SSH_KEY` o job de deploy só avisa e é pulado. Re-publicar sem commit novo: **Actions → CI → Run workflow**.
 
@@ -104,7 +108,7 @@ bash scripts/backup.sh listar
 bash scripts/backup.sh restaurar backups/tectune_AAAA-MM-DD_HHMM.dump
 ```
 
-Os backups ficam na própria VPS: copie para fora de vez em quando (`rsync -av vps-prd:/srv/apps/tectune/backups/ ~/Backups/tectune/`)
+Os backups ficam na própria VPS: copie para fora de vez em quando (`rsync -av root@187.41.102.127:/srv/apps/tectune/backups/ ~/Backups/tectune/`)
 ou siga o mesmo caminho de backup offsite do elama.
 
 ## 5. App mobile
@@ -127,4 +131,7 @@ Identificadores: `br.com.tectune.app`.
 | Certificado não sai / erro de TLS | Registro DNS em nuvem laranja → mude para cinza; veja `docker logs ingress-caddy` |
 | 502 | `tectune-app` parado ou fora da network `ingress` (`docker network inspect ingress`) |
 | Show ao vivo não conecta | Veja os logs do app; o WebSocket passa pelo mesmo proxy (`/api/live`) |
+| CI: `Host key verification failed` | `VPS_KNOWN_HOSTS` vazio ou errado: gere de novo com o `ssh-keyscan` acima |
+| CI: `Permission denied (publickey)` | A linha no `authorized_keys` não é da `tectune_actions`; refaça o passo 3.2 e teste do Mac |
+| `detected dubious ownership` no git | `git config --global --add safe.directory /srv/apps/tectune` |
 | 429 no login | Limite anti-abuso: 30 tentativas por 15 min por IP |
