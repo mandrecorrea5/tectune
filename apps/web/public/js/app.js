@@ -51,8 +51,14 @@ let sl = null;       // setlist aberta (com músicas)
 let cur = -1;        // índice da música aberta em sl.songs
 let selBar = null;   // compasso selecionado no editor visual: "seção:compasso" ou "+seção" (compasso novo no fim)
 
-function toast(msg, ms = 2800) {
+function toast(msg, ms = 2800, action) {
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  t.classList.toggle('act', !!action);
+  if (action) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = action.label;
+    b.onclick = () => { t.classList.remove('show'); action.run(); };
+    t.append(' ', b); ms = Math.max(ms, 6000);
+  }
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms);
 }
 const slug = s => norm(s || 'cifra').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'cifra';
@@ -571,6 +577,16 @@ function decorateSheet() {
     const sec = song.sections[si]; if (!sec) return;
     el.style.setProperty('--sc', secColor(sec.name, si));
     if (!isAdmin() || isPalco()) return;
+    // ações da seção direto no título dela: duplicar, apagar, mais opções
+    const head = el.querySelector(':scope > .sec-h');
+    if (head) {
+      const nm = esc(sec.name || 'seção ' + (si + 1));
+      head.insertAdjacentHTML('beforeend', `<span class="secacts-inline">
+        <button type="button" data-sdup="${si}" title="Duplicar ${nm}" aria-label="Duplicar ${nm}"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Duplicar</span></button>
+        <button type="button" data-sdel="${si}" class="del" title="Apagar ${nm}" aria-label="Apagar ${nm}"><svg aria-hidden="true"><use href="#i-trash"/></svg><span>Apagar</span></button>
+        <button type="button" data-sedit="${si}" class="more" title="Renomear, repetir ou mover" aria-label="Mais opções de ${nm}">⋯</button>
+      </span>`);
+    }
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'addbar' + (selBar === '+' + si ? ' sel' : ''); btn.dataset.sec = si;
     btn.setAttribute('aria-label', `Novo compasso em ${sec.name || 'seção ' + (si + 1)}`);
@@ -1030,12 +1046,12 @@ $('formSecEdit').addEventListener('click', e => {
     applyEdit({ text: moveSection(t, sg, editSi, d), id: null }); editSi += d; refreshSecEdit();
   } else if (a === 'dup') {
     $('dlgSecEdit').close(); applyEdit({ text: duplicateSection(t, sg, editSi), id: `${editSi + 1}:0` });
-    toast('Seção duplicada');
+    toast('Seção duplicada', 4000, { label: 'Desfazer', run: undoEdit });
   } else if (a === 'del') {
     $('secDelName').textContent = sg.sections[editSi]?.name || 'esta seção'; $('secDelConfirm').hidden = false;
   } else if (a === 'delok') {
     $('dlgSecEdit').close(); applyEdit({ text: deleteSection(t, sg, editSi), id: null });
-    toast('Seção apagada (⌘Z / Ctrl+Z desfaz)');
+    toast('Seção apagada', 6000, { label: 'Desfazer', run: undoEdit });
   }
 });
 
@@ -1067,7 +1083,33 @@ $('formSection').addEventListener('submit', e => {
 });
 $('dlgSection').addEventListener('close', () => { pendingChord = null; });
 // música sem nenhuma seção: a folha vira o ponto de partida
+// duplicar / apagar / editar pela própria seção na cifra
+let delArm = null;
+function sectionAction(e) {
+  const t = e.target.closest('[data-sdup],[data-sdel],[data-sedit]'); if (!t || !curSong() || !isAdmin()) return false;
+  e.stopPropagation();
+  const text = curSong().content, sg = parseSong(text);
+  if (t.dataset.sedit != null) { openSecEdit(+t.dataset.sedit); return true; }
+  if (t.dataset.sdup != null) {
+    const si = +t.dataset.sdup;
+    applyEdit({ text: duplicateSection(text, sg, si), id: `${si + 1}:0` });
+    toast(`${sg.sections[si].name || 'Seção'} duplicada`, 4000, { label: 'Desfazer', run: undoEdit });
+    setTimeout(() => $('sheet').querySelector('.bar.sel')?.closest('.sec')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 40);
+    return true;
+  }
+  const si = +t.dataset.sdel;
+  if (delArm !== si) { // primeiro toque arma, o segundo apaga
+    delArm = si; t.classList.add('armed'); t.querySelector('span').textContent = 'Apagar mesmo?';
+    setTimeout(() => { if (delArm === si) { delArm = null; renderPreview(); } }, 3500);
+    return true;
+  }
+  delArm = null;
+  applyEdit({ text: deleteSection(text, sg, si), id: null });
+  toast(`${sg.sections[si].name || 'Seção'} apagada`, 6000, { label: 'Desfazer', run: undoEdit });
+  return true;
+}
 $('sheet').addEventListener('click', e => {
+  if (sectionAction(e)) return;
   const b = e.target.closest('[data-newsec]'); if (!b) return;
   if (b.dataset.newsec === '?') openSectionDialog(); else addSection(b.dataset.newsec);
 });

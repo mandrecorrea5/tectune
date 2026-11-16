@@ -825,3 +825,19 @@ dialog.tour[open]{display:flex}
 /* no editor a observação aparece (e se edita) no cabeçalho; na folha do palco e no PDF continua */
 body:not(.palco) #sheet .gnotes{display:none}
 @media (max-width:760px){ .chip input.chipin{width:100%} }
+
+/* ações da seção no título dela (editor) */
+.secacts-inline{display:inline-flex;align-items:center;gap:4px;margin-left:auto}
+.secacts-inline button{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 9px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer}
+.secacts-inline button:hover{background:var(--panel2);border-color:var(--line);color:var(--ink)}
+.secacts-inline svg{width:14px;height:14px}
+.secacts-inline .del:hover{color:#F87171}
+.secacts-inline .del.armed{background:#7F1D1D;border-color:#B91C1C;color:#fff}
+.secacts-inline .more{font-size:17px;padding:0 8px}
+#toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
+#toast button{border:0;background:transparent;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;padding:2px 0;cursor:pointer}
+@media (max-width:760px){
+  .secacts-inline span{display:none}
+  .secacts-inline .del.armed span{display:inline}
+  .secacts-inline button{height:32px;padding:0 9px}
+}
