@@ -1,0 +1,19 @@
+{
+  "name": "Tectune",
+  "short_name": "Tectune",
+  "description": "Cifre tocando no compasso, monte o repertório e toque junto com a banda, no mesmo compasso.",
+  "lang": "pt-BR",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0E0D0C",
+  "theme_color": "#0E0D0C",
+  "categories": ["music", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

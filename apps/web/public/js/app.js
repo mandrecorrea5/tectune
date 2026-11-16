@@ -77,7 +77,8 @@ let saveTimer = null, savingP = null, saveErr = false;
 
 function updateStatus() {
   const el = $('status'); let cls = 'ok', msg = 'Salvo';
-  if (GUEST) { cls = 'ok'; msg = 'Pelo link'; }
+  if (!navigator.onLine) { cls = 'off'; msg = pending.size ? 'Offline · não salvo' : 'Offline'; }
+  else if (GUEST) { cls = 'ok'; msg = 'Pelo link'; }
   else if (savingP) { cls = ''; msg = 'Salvando…'; }
   else if (saveErr) { cls = 'err'; msg = 'Erro ao salvar'; }
   else if (pending.size) { cls = 'dirty'; msg = 'Não salvo'; }
@@ -602,6 +603,7 @@ function gotoSong(d) {
 }
 function setPalco(on) {
   document.body.classList.toggle('palco', on);
+  keepAwake(on); // no palco a tela não apaga
   if (on && document.body.dataset.view !== 'song') { document.body.dataset.view = 'song'; renderSongView(); }
   renderPreview();
 }
@@ -1272,6 +1274,7 @@ if (!GUEST) api('GET', '/auth/options').then(o => { canReset = !!o.passwordReset
 async function logout() {
   try { await api('POST', '/auth/logout'); } catch (e) { /* já saiu */ }
   setToken(null); me = null; live.set({ role: 'off' }); $('dlgBand').close();
+  navigator.serviceWorker?.controller?.postMessage({ t: 'logout' }); // apaga o repertório guardado para uso offline
   setlists = []; sl = null; cur = -1; showAuth();
 }
 $('bsLogout').onclick = logout; $('logoutBtn').onclick = logout;
@@ -1447,6 +1450,41 @@ async function startGuest() {
   renderAll();
   $('joinScreen').hidden = false;
 }
+
+/* ---------------- PWA: instalar, offline e tela acesa ---------------- */
+// quem instala pelo link do show abre direto no show (manifest próprio do link)
+if (GUEST) $('manifestLink').href = `/s/${GUEST}/manifest.webmanifest`;
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const INSTALL_KEY = 'tectune-instalar-depois';
+let installEvt = null;
+function renderInstall() {
+  const can = !standalone() && (!!installEvt || isIOS);
+  let later = false; try { later = localStorage.getItem(INSTALL_KEY) === '1'; } catch (e) {}
+  $('installBtn').hidden = !can; $('installBar').hidden = !can || later;
+}
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; renderInstall(); });
+addEventListener('appinstalled', () => { installEvt = null; renderInstall(); toast('Tectune instalado'); });
+async function doInstall() {
+  if (installEvt) { installEvt.prompt(); await installEvt.userChoice.catch(() => null); installEvt = null; renderInstall(); }
+  else if (isIOS) $('dlgInstall').showModal();
+}
+$('installBtn').onclick = doInstall; $('installGo').onclick = doInstall;
+$('installDismiss').onclick = () => { try { localStorage.setItem(INSTALL_KEY, '1'); } catch (e) {} renderInstall(); };
+renderInstall();
+// sem internet: continua mostrando o que já foi aberto; as alterações esperam a conexão voltar
+addEventListener('online', () => { updateStatus(); toast('Conexão de volta'); if (pending.size) flush(); });
+addEventListener('offline', () => { updateStatus(); toast('Sem internet: os shows já abertos continuam aqui'); });
+// tela acesa durante o palco (Screen Wake Lock)
+let wakeLock = null;
+async function keepAwake(on) {
+  try {
+    if (on && 'wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
+    else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+  } catch (e) { /* sem suporte ou aba em segundo plano */ }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && isPalco()) keepAwake(true); });
 
 /* ---------------- início ---------------- */
 try { setMode(localStorage.getItem(MODE_KEY) === 'code' ? 'code' : 'visual'); } catch (e) { setMode('visual'); }

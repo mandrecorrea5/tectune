@@ -296,6 +296,22 @@ app.get('/api/public/shows/:token', wrap(async (req, res) => {
 }));
 
 /* ---------- front-end ---------- */
+// link do show instalado como app (PWA): abre direto no show, não no login
+app.get('/s/:token/manifest.webmanifest', (req, res) => {
+  const tok = String(req.params.token);
+  if (!SHARE_RE.test(tok)) return res.status(404).end();
+  res.set('Cache-Control', 'no-cache');
+  res.type('application/manifest+json').json({
+    name: 'Tectune — show', short_name: 'Tectune', lang: 'pt-BR',
+    id: `/s/${tok}`, start_url: `/s/${tok}`, scope: '/', display: 'standalone', orientation: 'any',
+    background_color: '#0E0D0C', theme_color: '#0E0D0C',
+    icons: [
+      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  });
+});
 // link do show: a mesma página, que abre no modo convidado
 app.get('/s/:token', (req, res) => {
   res.set('Cache-Control', 'no-cache');

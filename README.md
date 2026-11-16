@@ -20,6 +20,9 @@
   ⌘Z desfaz; ← → andam pelos compassos; Delete apaga.
 - **Link do show (sem cadastro)**: o admin cria um link (com QR code) e manda pelo WhatsApp. Quem abre escolhe o
   instrumento e o nome, vê as cifras e acompanha o ao vivo. Só leitura. O link pode ser trocado ou desligado.
+- **App instalável (PWA)**: instala pela tela inicial do celular ou pelo navegador, abre em tela cheia e
+  funciona sem internet com os shows já abertos (service worker em `public/sw.js`). No palco a tela não apaga.
+  Quem instala pelo link do show abre direto no show.
 - **Curva de energia**: o BPM de cada música na ordem do show, para montar a sequência
 - **Contas e bandas**: cadastro e login, convites, admins editam e membros acompanham
 - **Show ao vivo**: quem conduz dá o play e todos os aparelhos (inclusive quem entrou pelo link) seguem no mesmo

@@ -6,7 +6,14 @@
 <title>Tectune</title>
 <meta name="description" content="Tectune: cifre tocando no compasso, monte o repertório e mande um link para a banda tocar junto, no mesmo compasso.">
 <meta name="theme-color" content="#0E0D0C">
+<link rel="manifest" href="/manifest.webmanifest" id="manifestLink">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
 <link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tectune">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="stylesheet" href="/vendor/fonts/fonts.css">
 <link rel="stylesheet" href="/css/app.css">
 <script src="/vendor/jspdf.umd.min.js"></script>
@@ -29,6 +36,7 @@
   <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
   <symbol id="i-split" viewBox="0 0 24 24"><path d="M12 3v18M4 7h5M15 7h5M4 17h5M15 17h5"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
   <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></symbol>
 </svg>
 
@@ -40,12 +48,19 @@
   <button type="button" class="railbtn railplay" id="mShow" aria-label="Tocar"><svg aria-hidden="true"><use href="#i-play"/></svg><span>Tocar</span></button>
   <button type="button" class="railbtn member-only" id="bandBtn" aria-label="Banda, membros e conta"><svg aria-hidden="true"><use href="#i-band"/></svg><span>Banda</span></button>
   <span class="railspacer"></span>
+  <button type="button" class="railbtn" id="installBtn" aria-label="Instalar o Tectune" hidden><svg aria-hidden="true"><use href="#i-install"/></svg><span>Instalar</span></button>
   <span id="status" class="status" title="Salvamento"><i></i><span>Carregando…</span></span>
   <button type="button" class="avatar member-only" id="acctBtn" aria-label="Sua conta">?</button>
 </nav>
 
 <div class="appmain">
   <div id="inviteBar" class="invitebar" hidden></div>
+  <div id="installBar" class="installbar" hidden>
+    <svg aria-hidden="true"><use href="#i-install"/></svg>
+    <span><b>Instale o Tectune</b> para abrir direto da tela inicial, em tela cheia e mesmo sem internet.</span>
+    <button type="button" id="installGo" class="accent">Instalar</button>
+    <button type="button" id="installDismiss" class="ghost iconbtn" aria-label="Agora não"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+  </div>
 
   <!-- ============ SHOW: repertório + compartilhar ============ -->
   <section id="vShow" class="view" aria-label="Show">
@@ -418,6 +433,17 @@
     <span class="spacer"></span>
     <button type="button" class="accent" data-close>Fechar</button>
   </div>
+</dialog>
+
+<dialog id="dlgInstall">
+  <h2>Instalar o Tectune</h2>
+  <p class="muted">No iPhone e no iPad, pelo Safari:</p>
+  <ol class="steps">
+    <li>Toque em <b>Compartilhar</b> (o quadrado com a seta para cima).</li>
+    <li>Escolha <b>Adicionar à Tela de Início</b>.</li>
+    <li>Toque em <b>Adicionar</b>. O Tectune abre em tela cheia, como um app.</li>
+  </ol>
+  <div class="dlg-actions"><span class="spacer"></span><button type="button" class="accent" data-close>Entendi</button></div>
 </dialog>
 
 <dialog id="dlgExit">
