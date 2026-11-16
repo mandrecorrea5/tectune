@@ -153,7 +153,7 @@ export function parseSong(text) {
       const tm = rest.match(/x\s*(\d+)/i);
       if (tm) { times = +tm[1]; rest = rest.replace(tm[0], ''); }
       rest = rest.replace(/^[\s\-–—:\/>]+/, '').trim();
-      cur = { name: sm[1].trim(), times, notes: rest ? [rest] : [], rows: [], vocals: [] };
+      cur = { name: sm[1].trim(), times, notes: rest ? [rest] : [], rows: [], vocals: [], line: lineNo };
       song.sections.push(cur); return;
     }
     if (line.startsWith('>')) { const v = line.slice(1).trim(); if (v) ensure().notes.push(v); return; }
@@ -283,6 +283,14 @@ export function parseBpm(v) {
 }
 /** Duração de um compasso, em segundos. */
 export function barSeconds(meter, bpm) { return pulseInfo(meter).pulses * 60 / bpm; }
+
+/** Quantas vezes o compasso "seção:compasso" toca (ritornelos × repetição da seção). */
+export function barPlays(song, id) {
+  const [si, bi] = String(id).split(':').map(Number);
+  const s = song.sections[si]; if (!s) return 0;
+  const flat = s.rows.flat(); if (!flat[bi]) return 0;
+  return expandRepeats(flat).filter(i => i === bi).length * (s.times || 1);
+}
 
 // Ordem de execução dos compassos de uma seção: ritornelos |: :| (xN) e casas 1./2.
 function expandRepeats(bars) {

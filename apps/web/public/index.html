@@ -156,8 +156,9 @@
 
     <section class="songhead">
       <div class="songname">
-        <p class="eyebrow" id="shArtist"></p>
-        <h1 id="shTitle">—</h1>
+        <p class="eyebrow" id="shArtist" data-ph="Adicionar artista"></p>
+        <h1 id="shTitle" data-ph="Nome da música">—</h1>
+        <p class="songobs" id="shObs" data-ph="Adicionar observação (capotraste, levada, quem começa…)"></p>
       </div>
       <div class="chips">
         <div class="chip keychip">
@@ -165,8 +166,10 @@
           <span><small>TOM</small><b id="shKey">—</b></span>
           <button type="button" id="tUp" aria-label="Subir meio tom">+</button>
         </div>
-        <div class="chip"><small>BPM</small><b id="shBpm">—</b></div>
-        <div class="chip"><small>FÓRMULA</small><b id="shTime">4/4</b></div>
+        <label class="chip"><small>BPM</small><input id="shBpm" class="chipin" inputmode="numeric" maxlength="3" autocomplete="off" aria-label="Andamento em batidas por minuto"></label>
+        <label class="chip"><small>FÓRMULA</small><select id="shTime" class="chipin" aria-label="Fórmula de compasso">
+          <option>2/4</option><option>3/4</option><option>4/4</option><option>5/4</option><option>6/4</option><option>2/2</option><option>3/8</option><option>6/8</option><option>7/8</option><option>9/8</option><option>12/8</option>
+        </select></label>
         <div class="chip"><small>DURAÇÃO</small><b id="shDur">—</b></div>
       </div>
     </section>
@@ -251,7 +254,11 @@
           <div id="barBeats" class="beatsbox"></div>
           <div class="barfields admin-only">
             <label>Acordes<input id="barChords" autocomplete="off" spellcheck="false" placeholder="ex.: C G/B"></label>
-            <label>Letra neste compasso<input id="barLyric" autocomplete="off" placeholder="O trecho que o cantor canta aqui"></label>
+            <label><span id="barLyricL">Letra neste compasso</span><input id="barLyric" autocomplete="off" placeholder="O trecho que o cantor canta aqui"></label>
+            <div id="barPasses" class="passes" hidden>
+              <button type="button" id="barPassToggle" class="link"></button>
+              <div id="barPassFields" class="passfields" hidden></div>
+            </div>
             <div class="two">
               <label>Anotação<input id="barNote" autocomplete="off" placeholder="breque, só bateria…"></label>
               <label>Casa<input id="barEnding" autocomplete="off" inputmode="numeric" placeholder="1, 2, 1-3"></label>
@@ -498,6 +505,26 @@
     <div class="dlg-actions">
       <button type="button" id="slDelete" class="danger">Excluir show</button>
       <span class="spacer"></span>
+      <button type="button" data-close>Cancelar</button>
+      <button type="submit" class="accent">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- seção: renomear, repetir, mover, duplicar, apagar -->
+<dialog id="dlgSecEdit">
+  <form id="formSecEdit" method="dialog">
+    <h2>Seção</h2>
+    <label>Nome<input name="name" maxlength="60" required></label>
+    <label class="inline">Tocar a seção inteira<span class="times"><input name="times" type="number" min="1" max="99" inputmode="numeric"> vez(es)</span></label>
+    <div class="secacts">
+      <button type="button" data-sa="up">↑ Subir</button>
+      <button type="button" data-sa="down">↓ Descer</button>
+      <button type="button" data-sa="dup">Duplicar</button>
+      <button type="button" data-sa="del" class="danger">Apagar seção</button>
+    </div>
+    <p class="muted" id="secDelConfirm" hidden>Apagar <b id="secDelName"></b> com todos os compassos e a letra dela? <button type="button" data-sa="delok" class="danger">Sim, apagar</button></p>
+    <div class="dlg-actions"><span class="spacer"></span>
       <button type="button" data-close>Cancelar</button>
       <button type="submit" class="accent">Salvar</button>
     </div>

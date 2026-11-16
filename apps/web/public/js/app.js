@@ -5,6 +5,8 @@ import {
   COVER_STEPS, COVER_OPTS, coverOpts, flowStaff, buildTimeline, barSeconds, parseBpm, sectionLengths,
   keyChords, usedChords, setBarChords, addBarChord, insertBarAfter, appendBar, deleteBar, toggleRepeatStart, toggleRepeatEnd,
   setRepeatTimes, setBarEnding, setBarNote, setBarLyric, barLyric, appendSection,
+  setMeta, renameSection, setSectionTimes, duplicateSection, moveSection, deleteSection,
+  barPlays, barLyricPasses, setBarLyricPass,
 } from '/core/index.js';
 import { resolveCoverScale } from './cifra.js';
 
@@ -325,7 +327,8 @@ $('songNew').onclick = async () => {
     const song = await api('POST', '/songs', { content: NEW_SONG });
     await setOrder([...ids(), song.id], sl.songs.length);
     selBar = null; go('song');
-    toast('Música criada: comece adicionando a primeira seção');
+    toast('Música criada: dê um nome e comece pela primeira seção');
+    setTimeout(() => { const h = $('shTitle'); if (!h.classList.contains('editable')) return; h.focus(); const r = document.createRange(); r.selectNodeContents(h); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }, 60);
   } catch (err) { toast(err.message); }
 };
 
@@ -458,11 +461,17 @@ function renderSongView() {
   $('crumbShow').textContent = sl ? sl.name : 'Show';
   $('songPos').textContent = sl && s ? `${cur + 1} de ${sl.songs.length}` : '';
   $('songPrev').disabled = !sl || cur <= 0; $('songNext').disabled = !sl || cur >= sl.songs.length - 1;
-  $('shArtist').textContent = m.artist || '';
-  $('shTitle').textContent = s ? (m.title || 'Sem título') : 'Nenhuma música';
+  const ed = !!s && isAdmin();
+  editableText('shTitle', m.title || '', ed, s ? 'Sem título' : 'Nenhuma música');
+  editableText('shArtist', m.artist || '', ed, '');
+  editableText('shObs', m.notes || '', ed, '');
   $('shKey').textContent = m.key || '—';
-  $('shBpm').textContent = m.bpm ? String(parseBpm(m.bpm) || m.bpm) : '—';
-  $('shTime').textContent = p ? p.meter.label : '4/4';
+  const bpmIn = $('shBpm');
+  if (document.activeElement !== bpmIn) bpmIn.value = m.bpm ? String(parseBpm(m.bpm) || m.bpm) : '';
+  bpmIn.readOnly = !ed; bpmIn.placeholder = ed ? '—' : '—';
+  const tsel = $('shTime'); const lab = p ? p.meter.label : '4/4';
+  if (![...tsel.options].some(o => o.value === lab)) tsel.add(new Option(lab, lab));
+  tsel.value = lab; tsel.disabled = !ed;
   const secs = p && songSecs(p); $('shDur').textContent = secs ? mmss(secs) : '—';
   $('shDur').title = secs ? '' : 'Coloque o bpm: no cabeçalho para calcular';
   ['tUp', 'tDown', 'pPalco', 'shareJump'].forEach(id => { $(id).disabled = !s; });
@@ -857,6 +866,7 @@ function renderInspector() {
   if (!s || !selBar) {
     where.textContent = s ? 'Toque num compasso' : '—';
     beats.style.setProperty('--n', 1);
+    $('barPasses').hidden = true;
     beats.innerHTML = `<div class="empty">${s && isAdmin() ? 'Toque num compasso da cifra para editar. Ou digite um acorde direto: ele entra no fim.' : 'Toque num compasso para ver os detalhes.'}</div>`;
     fields.forEach(id => { if ($(id).tagName === 'INPUT' && $(id).type !== 'number') $(id).value = ''; });
     $('barRepStart').classList.remove('on'); $('barRepEnd').classList.remove('on');
@@ -868,6 +878,7 @@ function renderInspector() {
     where.textContent = `${sec?.name || 'Seção'} · novo compasso`;
     beats.style.setProperty('--n', 1);
     beats.innerHTML = '<div class="empty">Escolha um acorde embaixo (ou digite) para criar o compasso.</div>';
+    $('barPasses').hidden = true;
     ['barChords', 'barLyric', 'barNote', 'barEnding'].forEach(id => { $(id).value = ''; });
     off(true); return;
   }
@@ -888,6 +899,7 @@ function renderInspector() {
   $('barRepStart').classList.toggle('on', !!b.start); $('barRepEnd').classList.toggle('on', !!b.end);
   $('barTimes').disabled = !b.end; setv('barTimes', b.times || 2);
   $('barTimesL').style.opacity = b.end ? 1 : .4;
+  renderPasses(sg);
 }
 // [1,2,3] → "1-3"; [1,3] → "1,3"
 function endingSpec(p) {
@@ -907,6 +919,67 @@ $('barRepStart').onclick = () => { if (selBar && !isNew()) applyEdit(toggleRepea
 $('barRepEnd').onclick = () => { if (selBar && !isNew()) applyEdit(toggleRepeatEnd(curSong().content, selBar, song())); };
 $('barDel').onclick = delBar;
 
+/* cabeçalho editável: título, artista, observação, bpm e fórmula */
+function editableText(id, value, editable, fallback) {
+  const el = $(id); if (document.activeElement === el) return;
+  el.textContent = value || (editable ? '' : fallback);
+  el.contentEditable = editable ? 'plaintext-only' : 'false';
+  if (editable && el.contentEditable !== 'plaintext-only') el.contentEditable = 'true'; // navegador sem plaintext-only
+  el.classList.toggle('editable', editable);
+  el.hidden = !editable && !value && !fallback;
+  el.dataset.orig = value;
+}
+function editMeta(key, value) {
+  const s = curSong(); if (!s || !isAdmin()) return;
+  const text = setMeta(s.content, key, value);
+  if (text !== s.content) applyEdit({ text, id: selBar });
+}
+[['shTitle', 'title'], ['shArtist', 'artist'], ['shObs', 'notes']].forEach(([id, key]) => {
+  const el = $(id);
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    else if (e.key === 'Escape') { el.textContent = el.dataset.orig || ''; el.blur(); }
+  });
+  el.addEventListener('blur', () => {
+    if (!el.classList.contains('editable')) return;
+    const v = el.textContent.replace(/\s+/g, ' ').trim();
+    if (v !== (el.dataset.orig || '')) editMeta(key, v); else renderSongView();
+  });
+  // colar texto com formatação: só o texto
+  el.addEventListener('paste', e => { e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData.getData('text/plain') || '').replace(/\s+/g, ' ')); });
+});
+$('shBpm').addEventListener('change', () => {
+  const v = $('shBpm').value.replace(/\D/g, '');
+  if (v && (+v < 20 || +v > 400)) { toast('Use um andamento entre 20 e 400 bpm'); renderSongView(); return; }
+  editMeta('bpm', v);
+});
+$('shBpm').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('shBpm').blur(); } });
+$('shTime').addEventListener('change', () => editMeta('time', $('shTime').value));
+
+/* letra diferente em cada vez que o compasso toca */
+let passOpen = false;
+function renderPasses(sg) {
+  const box = $('barPasses');
+  const plays = selBar && !isNew() ? barPlays(sg, selBar) : 0;
+  $('barLyricL').textContent = plays > 1 ? 'Letra (todas as vezes)' : 'Letra neste compasso';
+  box.hidden = plays < 2 || !isAdmin() && !Object.keys(barLyricPasses(sg, selBar || '')).length;
+  if (box.hidden) return;
+  const passes = barLyricPasses(sg, selBar);
+  const open = passOpen || Object.keys(passes).length > 0;
+  $('barPassToggle').textContent = open ? 'Esconder a letra de cada vez' : `Letra diferente em cada vez (toca ${plays}×)`;
+  $('barPassToggle').hidden = Object.keys(passes).length > 0;
+  const fields = $('barPassFields'); fields.hidden = !open;
+  if (fields.contains(document.activeElement)) return;
+  const n = Math.min(plays, 12);
+  fields.innerHTML = Array.from({ length: n }, (_, k) => k + 1).map(p => `<label>${p}ª vez<input data-pass="${p}" autocomplete="off" value="${esc(passes[p] || '')}" placeholder="igual às outras vezes"${isAdmin() ? '' : ' disabled'}></label>`).join('');
+}
+$('barPassToggle').onclick = () => { passOpen = !passOpen; renderPasses(song()); if (passOpen) $('barPassFields').querySelector('input')?.focus(); };
+$('barPassFields').addEventListener('change', e => {
+  const i = e.target.closest('[data-pass]'); if (!i || !selBar || isNew() || !curSong()) return;
+  applyEdit(setBarLyricPass(curSong().content, selBar, song(), i.value, +i.dataset.pass));
+});
+$('barPassFields').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-pass]')) { e.preventDefault(); e.target.blur(); } });
+
 /* estrutura da música */
 function renderStruct() {
   const s = curSong(); const list = $('structList'), bar = $('structBar');
@@ -914,16 +987,58 @@ function renderStruct() {
   const sg = parseSong(s.content); const lens = sectionLengths(sg); const bpm = parseBpm(sg.meta.bpm);
   const bs = bpm ? barSeconds(sg.meter, bpm) : 0;
   bar.innerHTML = sg.sections.map((x, i) => lens[i] ? `<i style="flex:${lens[i]};background:${secColor(x.name, i)}"></i>` : '').join('');
+  const adm = isAdmin();
   list.innerHTML = sg.sections.map((x, i) => `<li><button type="button" data-si="${i}"><span class="dot" style="background:${secColor(x.name, i)}"></span>
-    <span class="nm">${esc(x.name || 'Sem nome')}${x.times ? ` ×${x.times}` : ''}</span><span class="tm">${bs ? mmss(lens[i] * bs) : `${lens[i]} comp.`}</span></button></li>`).join('')
+    <span class="nm">${esc(x.name || 'Sem nome')}${x.times ? ` ×${x.times}` : ''}</span><span class="tm">${bs ? mmss(lens[i] * bs) : `${lens[i]} comp.`}</span></button>${adm ? `<button type="button" class="secmenu" data-sedit="${i}" aria-label="Editar a seção ${esc(x.name || i + 1)}" title="Renomear, repetir, mover, duplicar ou apagar">⋯</button>` : ''}</li>`).join('')
     || '<li class="hint">Nenhuma seção ainda.</li>';
 }
 $('structList').addEventListener('click', e => {
+  const ed = e.target.closest('[data-sedit]'); if (ed) { openSecEdit(+ed.dataset.sedit); return; }
   const b = e.target.closest('[data-si]'); if (!b) return;
   const si = +b.dataset.si; const n = song().sections[si].rows.flat().length;
   if (document.body.classList.contains('code')) setMode('visual');
   selectBar(n ? `${si}:0` : '+' + si, { scroll: true });
 });
+// editar a seção: nome, quantas vezes toca, mover, duplicar, apagar
+let editSi = null;
+function openSecEdit(si) {
+  const sg = song(); const sec = sg.sections[si]; if (!sec) return;
+  editSi = si; const f = $('formSecEdit');
+  f.name.value = sec.name || ''; f.times.value = sec.times || 1;
+  refreshSecEdit(); $('secDelConfirm').hidden = true;
+  $('dlgSecEdit').showModal(); f.name.focus();
+}
+function refreshSecEdit() {
+  const n = song().sections.length; const f = $('formSecEdit');
+  f.querySelector('[data-sa=up]').disabled = editSi <= 0;
+  f.querySelector('[data-sa=down]').disabled = editSi >= n - 1;
+}
+$('formSecEdit').addEventListener('submit', e => {
+  e.preventDefault(); const f = e.target; if (editSi == null || !curSong()) return;
+  let t = curSong().content; let sg = parseSong(t); const sec = sg.sections[editSi];
+  const name = f.name.value.trim(); const times = Math.max(1, Math.min(99, +f.times.value || 1));
+  if (name && name !== sec.name) { t = renameSection(t, sg, editSi, name); sg = parseSong(t); }
+  if (times !== (sec.times || 1)) t = setSectionTimes(t, sg, editSi, times);
+  $('dlgSecEdit').close();
+  if (t !== curSong().content) applyEdit({ text: t, id: selBar });
+});
+$('formSecEdit').addEventListener('click', e => {
+  const b = e.target.closest('[data-sa]'); if (!b || editSi == null || !curSong()) return;
+  const t = curSong().content, sg = parseSong(t), a = b.dataset.sa;
+  if (a === 'up' || a === 'down') {
+    const d = a === 'up' ? -1 : 1;
+    applyEdit({ text: moveSection(t, sg, editSi, d), id: null }); editSi += d; refreshSecEdit();
+  } else if (a === 'dup') {
+    $('dlgSecEdit').close(); applyEdit({ text: duplicateSection(t, sg, editSi), id: `${editSi + 1}:0` });
+    toast('Seção duplicada');
+  } else if (a === 'del') {
+    $('secDelName').textContent = sg.sections[editSi]?.name || 'esta seção'; $('secDelConfirm').hidden = false;
+  } else if (a === 'delok') {
+    $('dlgSecEdit').close(); applyEdit({ text: deleteSection(t, sg, editSi), id: null });
+    toast('Seção apagada (⌘Z / Ctrl+Z desfaz)');
+  }
+});
+
 // nova seção: entra no fim da música com um compasso vazio já selecionado para receber os acordes
 let pendingChord = null; // acorde digitado antes de existir qualquer seção
 function openSectionDialog() {

@@ -5,6 +5,8 @@ import {
   toggleRepeatStart, toggleRepeatEnd, setRepeatTimes, setBarEnding, setBarNote, setBarLyric, barLyric, appendSection,
   keyChords, usedChords,
 } from '../src/index.js';
+import * as E from '../src/index.js';
+import { barPlays } from '../src/index.js';
 
 const SONG = `título: Teste
 tom: G
@@ -137,4 +139,56 @@ test('acordes do tom', () => {
   assert.deepEqual(keyChords('F#').map(x => x.chord).slice(0, 3), ['F#', 'G#m', 'A#m']);
   assert.deepEqual(keyChords(''), []);
   assert.deepEqual(usedChords(parseSong(SONG), ['G', 'C']).sort(), ['Am', 'D', 'D/F#', 'Em']);
+});
+
+/* ---------- cabeçalho, seções e letra por passada ---------- */
+const BASE = 'título: X\nartista:\ntom: C\nbpm: 90\ncompasso: 4/4\n\n[Intro]\n| C | G |\n\n[Verso] x2\n| Am | F |\nvoz 1: oi\nvoz 1 [2]: tchau\n\n[Refrão]\n|: C | G :| x3\n';
+
+test('setMeta troca, cria e apaga linhas do cabeçalho', () => {
+  let t = E.setMeta(BASE, 'title', 'Garota de Ipanema');
+  assert.equal(parseSong(t).meta.title, 'Garota de Ipanema');
+  t = E.setMeta(t, 'artist', 'Tom Jobim');
+  assert.equal(parseSong(t).meta.artist, 'Tom Jobim');
+  assert.equal(t.split('\n').filter(l => /^artista/.test(l)).length, 1, 'reaproveita a linha vazia');
+  t = E.setMeta(t, 'bpm', '130'); t = E.setMeta(t, 'time', '3/4'); t = E.setMeta(t, 'notes', 'capo na 2');
+  const s = parseSong(t);
+  assert.equal(s.meta.bpm, '130'); assert.equal(s.meter.label, '3/4'); assert.equal(s.meta.notes, 'capo na 2');
+  assert.equal(s.sections.length, 3, 'não mexe nas seções');
+  t = E.setMeta(t, 'notes', '');
+  assert.equal(parseSong(t).meta.notes, undefined);
+  // música sem cabeçalho: a linha entra no topo
+  assert.match(E.setMeta('[A]\n| C |\n', 'title', 'Nova'), /^título: Nova\n\[A\]/);
+});
+
+test('seções: renomear, repetir, duplicar, mover e apagar', () => {
+  const s = parseSong(BASE);
+  const names = t => parseSong(t).sections.map(x => x.name + (x.times ? ' x' + x.times : ''));
+  assert.deepEqual(names(E.renameSection(BASE, s, 0, 'Abertura')), ['Abertura', 'Verso x2', 'Refrão']);
+  assert.deepEqual(names(E.setSectionTimes(BASE, s, 1, 1)), ['Intro', 'Verso', 'Refrão']);
+  assert.deepEqual(names(E.setSectionTimes(BASE, s, 2, 4)), ['Intro', 'Verso x2', 'Refrão x4']);
+  assert.deepEqual(names(E.duplicateSection(BASE, s, 0)), ['Intro', 'Intro', 'Verso x2', 'Refrão']);
+  assert.deepEqual(names(E.moveSection(BASE, s, 2, -1)), ['Intro', 'Refrão', 'Verso x2']);
+  assert.deepEqual(names(E.moveSection(BASE, s, 0, -1)), ['Intro', 'Verso x2', 'Refrão'], 'primeira não sobe');
+  const d = E.deleteSection(BASE, s, 1);
+  assert.deepEqual(names(d), ['Intro', 'Refrão']);
+  assert.doesNotMatch(d, /voz/, 'a letra vai junto');
+  assert.equal(parseSong(E.moveSection(BASE, s, 1, 1)).sections[2].vocals.length, 2, 'letra acompanha a seção');
+  // seção sem cabeçalho ganha um ao ser renomeada
+  const t2 = 'título: Y\n| C | G |\n';
+  assert.deepEqual(names(E.renameSection(t2, parseSong(t2), 0, 'Intro')), ['Intro']);
+});
+
+test('letra por passada: lê, escreve e não mexe na letra geral', () => {
+  const s = parseSong(BASE);
+  assert.equal(barPlays(s, '1:0'), 2); assert.equal(barPlays(s, '2:1'), 3); assert.equal(barPlays(s, '0:0'), 1);
+  assert.deepEqual(E.barLyricPasses(s, '1:0'), { 2: 'tchau' });
+  let t = E.setBarLyricPass(BASE, '1:0', s, 'olá', 1).text;
+  let p = parseSong(t);
+  assert.deepEqual(E.barLyricPasses(p, '1:0'), { 1: 'olá', 2: 'tchau' });
+  assert.equal(E.barLyric(p, '1:0'), 'oi');
+  t = E.setBarLyricPass(t, '1:0', p, '', 2).text; p = parseSong(t);
+  assert.deepEqual(E.barLyricPasses(p, '1:0'), { 1: 'olá' });
+  // mexer na letra geral não apaga as passadas
+  t = E.setBarLyric(t, '1:0', p, 'mudou').text; p = parseSong(t);
+  assert.equal(E.barLyric(p, '1:0'), 'mudou'); assert.deepEqual(E.barLyricPasses(p, '1:0'), { 1: 'olá' });
 });

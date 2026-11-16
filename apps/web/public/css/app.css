@@ -781,3 +781,42 @@ dialog.tour[open]{display:flex}
   .tourtext{padding:18px 20px 4px}
   .tourtext h2{font-size:23px}
 }
+
+/* ---------- cabeçalho editável e seções ---------- */
+.songname .editable{outline:none;border-radius:8px;cursor:text;transition:background .15s}
+.songname .editable:hover{background:var(--panel)}
+.songname .editable:focus{background:var(--panel);box-shadow:0 0 0 2px var(--accent)}
+.songname [data-ph].editable:empty::before{content:attr(data-ph);color:var(--muted);opacity:.7;font-weight:inherit}
+.songname h1.editable:empty::before{font-weight:700}
+.songobs{margin:8px 0 0;font-size:14.5px;line-height:1.45;color:var(--ink2);max-width:640px}
+.songobs.editable:empty{font-size:13.5px}
+.songobs[hidden],.songname .eyebrow[hidden]{display:none}
+.chip .chipin{width:100%;min-width:0;border:0;background:transparent;padding:0;text-align:center;text-align-last:center;font-family:var(--mono);font-size:17px;font-weight:500;color:var(--ink);appearance:none;-webkit-appearance:none;cursor:pointer;height:auto;box-shadow:none}
+.chip .chipin:read-only,.chip .chipin:disabled{cursor:default;opacity:1}
+.chip .chipin:focus{outline:none}
+.chip:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.chip input.chipin{cursor:text}
+.structlist li{display:flex;align-items:center;gap:2px}
+.structlist li>button[data-si]{flex:1;min-width:0}
+.structlist .secmenu{flex:none;width:36px;height:36px;padding:0;border:0;background:transparent;font-size:18px;color:var(--muted);border-radius:8px;justify-content:center}
+.structlist .secmenu:hover{background:var(--panel2);color:var(--ink)}
+#formSecEdit .times{display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--ink2)}
+#formSecEdit .times input{width:76px}
+.secacts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 10px}
+.secacts .danger{grid-column:1/-1}
+#secDelConfirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 6px}
+#secDelConfirm[hidden]{display:none}
+.passes{margin:-2px 0 6px}
+.passes[hidden],.passfields[hidden],#barPassToggle[hidden]{display:none}
+.passes .link{font-size:13px;padding:0;height:auto;border:0;background:none;color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.passfields{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding-left:10px;border-left:2px solid var(--line2)}
+.passfields label{font-size:12px}
+@media (max-width:760px){
+  .chip .chipin{font-size:16px}
+  .songobs{font-size:14px}
+}
+.chip input.chipin{width:4.5ch}
+.chip select.chipin{width:auto;padding:0 2px}
+/* no editor a observação aparece (e se edita) no cabeçalho; na folha do palco e no PDF continua */
+body:not(.palco) #sheet .gnotes{display:none}
+@media (max-width:760px){ .chip input.chipin{width:100%} }

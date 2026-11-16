@@ -252,3 +252,136 @@ export function usedChords(song, exclude = [], max = 6) {
   const ex = new Set(exclude);
   return [...count].filter(([c]) => !ex.has(c)).sort((a, b) => b[1] - a[1]).slice(0, max).map(([c]) => c);
 }
+
+/* ---------- letra de uma passada (voz N [P]: texto) ---------- */
+/** Letras por passada do compasso: { 2: 'texto da 2ª vez', ... } */
+export function barLyricPasses(song, id) {
+  const [si, bi] = String(id).split(':').map(Number);
+  const out = {};
+  for (const v of song.sections[si]?.vocals || []) if (v.pass && v.bar === bi + 1 && out[v.pass] == null) out[v.pass] = v.text;
+  return out;
+}
+/** Escreve a letra da passada P do compasso ("voz N [P]: texto"). Vazio apaga só essa passada. */
+export function setBarLyricPass(text, id, song, lyric, pass) {
+  const [si, bi] = String(id).split(':').map(Number);
+  const sec = song.sections[si]; if (!sec || !sec.rows.flat()[bi] || !(pass >= 1)) return { text, id };
+  const v = String(lyric || '').replace(/\s+/g, ' ').trim();
+  const lines = text.split('\n');
+  const mine = (sec.vocals || []).filter(e => e.pass === pass && e.bar === bi + 1).map(e => e.line - 1).sort((a, b) => a - b);
+  const entry = `voz ${bi + 1} [${pass}]: ${v}`;
+  if (mine.length) {
+    const [first, ...others] = mine;
+    if (v) lines[first] = entry; else others.unshift(first);
+    for (const li of others.sort((a, b) => b - a)) lines.splice(li, 1);
+  } else if (v) {
+    const last = Math.max(...sec.rows.flat().map(b => b.line), ...(sec.vocals || []).map(e => e.line));
+    lines.splice(last, 0, entry);
+  }
+  return { text: lines.join('\n'), id };
+}
+
+/* ---------- cabeçalho da música (título, artista, bpm, fórmula, observação) ---------- */
+const nrm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const META_KEYS = {
+  title: ['titulo', 'title', 'musica'], artist: ['artista', 'banda', 'autor'], key: ['tom', 'key'],
+  bpm: ['bpm', 'andamento'], time: ['compasso', 'formula'], notes: ['obs', 'observacao', 'observacoes', 'notas'],
+};
+const META_LABEL = { title: 'título', artist: 'artista', key: 'tom', bpm: 'bpm', time: 'compasso', notes: 'obs' };
+// onde termina o cabeçalho: na primeira seção, compasso ou letra
+function headerEnd(lines) {
+  const i = lines.findIndex(l => /^\s*\[/.test(l) || l.includes('|') || /^\s*(voz|letra|canta|vocal)\b/i.test(l));
+  return i < 0 ? lines.length : i;
+}
+/** Troca (ou cria / apaga, se vazio) uma linha do cabeçalho: setMeta(texto, 'title', 'Garota de Ipanema'). */
+export function setMeta(text, key, value) {
+  if (!META_KEYS[key]) return text;
+  const v = String(value ?? '').replace(/\s+/g, ' ').trim();
+  const lines = text.split('\n'); const end = headerEnd(lines);
+  let found = -1, lastMeta = -1;
+  for (let i = 0; i < end; i++) {
+    const m = lines[i].match(/^\s*([A-Za-zÀ-ÿçÇ]+)\s*:/); if (!m) continue;
+    const k = nrm(m[1]);
+    if (Object.values(META_KEYS).some(a => a.includes(k)) || ['capo', 'formato', 'visual', 'visualizacao', 'notacao'].includes(k)) lastMeta = i;
+    if (found < 0 && META_KEYS[key].includes(k)) found = i;
+  }
+  const entry = `${META_LABEL[key]}: ${v}`;
+  if (found >= 0) { if (v) lines[found] = entry; else lines.splice(found, 1); }
+  else if (v) lines.splice(lastMeta + 1, 0, entry);
+  return lines.join('\n');
+}
+
+/* ---------- seções inteiras (renomear, repetir, duplicar, mover, apagar) ---------- */
+// cada seção é o trecho do texto do cabeçalho "[Nome]" até a próxima seção
+function sectionBlocks(text, song) {
+  const lines = text.split('\n');
+  const starts = song.sections.map(s => {
+    if (s.line) return s.line - 1;
+    const ls = [...s.rows.flat().map(b => b.line), ...(s.vocals || []).map(v => v.line)];
+    return ls.length ? Math.min(...ls) - 1 : lines.length;
+  });
+  const blocks = starts.map((st, i) => {
+    let end = i + 1 < starts.length ? starts[i + 1] : lines.length;
+    while (end > st && !lines[end - 1].trim()) end--;
+    return lines.slice(st, end);
+  });
+  const prefix = lines.slice(0, starts.length ? starts[0] : lines.length);
+  while (prefix.length && !prefix[prefix.length - 1].trim()) prefix.pop();
+  return { prefix, blocks };
+}
+function joinBlocks(prefix, blocks) {
+  const parts = [];
+  if (prefix.length) parts.push(prefix.join('\n'));
+  for (const b of blocks) if (b.length) parts.push(b.join('\n'));
+  return parts.join('\n\n') + '\n';
+}
+const cleanName = n => String(n || '').replace(/[\[\]]/g, '').replace(/\s+/g, ' ').trim();
+// cabeçalho da seção (cria "[Seção]" se ela não tinha)
+function withHeader(block, name = 'Seção') {
+  return /^\s*\[/.test(block[0] || '') ? block : [`[${cleanName(name) || 'Seção'}]`, ...block];
+}
+/** Renomeia a seção (mantém "x2" e a observação do cabeçalho). */
+export function renameSection(text, song, si, name) {
+  const n = cleanName(name); if (!n || !song.sections[si]) return text;
+  const { prefix, blocks } = sectionBlocks(text, song);
+  const b = withHeader(blocks[si], n);
+  b[0] = b[0].replace(/^(\s*)\[(.+?)\]/, `$1[${n}]`);
+  blocks[si] = b;
+  return joinBlocks(prefix, blocks);
+}
+/** Quantas vezes a seção inteira toca ("[Refrão] x2"); 1 tira a repetição. */
+export function setSectionTimes(text, song, si, times) {
+  const sec = song.sections[si]; if (!sec) return text;
+  const t = Math.max(1, Math.min(99, Math.round(+times) || 1));
+  const { prefix, blocks } = sectionBlocks(text, song);
+  const b = withHeader(blocks[si], sec.name);
+  const m = b[0].match(/^(\s*\[.+?\])(.*)$/);
+  const rest = m[2].replace(/\s*x\s*\d+/i, '');
+  b[0] = m[1] + (t > 1 ? ` x${t}` : '') + rest;
+  blocks[si] = b;
+  return joinBlocks(prefix, blocks);
+}
+/** Copia a seção logo depois dela mesma. */
+export function duplicateSection(text, song, si) {
+  if (!song.sections[si]) return text;
+  const { prefix, blocks } = sectionBlocks(text, song);
+  const b = withHeader(blocks[si], song.sections[si].name);
+  blocks[si] = b; blocks.splice(si + 1, 0, [...b]);
+  return joinBlocks(prefix, blocks);
+}
+/** Move a seção uma posição para cima (-1) ou para baixo (+1). */
+export function moveSection(text, song, si, dir) {
+  const to = si + dir;
+  if (!song.sections[si] || to < 0 || to >= song.sections.length) return text;
+  const { prefix, blocks } = sectionBlocks(text, song);
+  blocks[si] = withHeader(blocks[si], song.sections[si].name);
+  blocks[to] = withHeader(blocks[to], song.sections[to].name);
+  [blocks[si], blocks[to]] = [blocks[to], blocks[si]];
+  return joinBlocks(prefix, blocks);
+}
+/** Apaga a seção inteira (compassos, letra e anotações dela). */
+export function deleteSection(text, song, si) {
+  if (!song.sections[si]) return text;
+  const { prefix, blocks } = sectionBlocks(text, song);
+  blocks.splice(si, 1);
+  return joinBlocks(prefix, blocks);
+}
