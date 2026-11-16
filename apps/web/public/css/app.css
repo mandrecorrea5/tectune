@@ -13,7 +13,10 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{font-family:Archivo,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;
-  display:grid;grid-template-columns:76px minmax(0,1fr);height:100vh;height:100dvh;overflow:hidden}
+  display:grid;grid-template-columns:76px minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-auto-rows:0;height:100vh;height:100dvh;overflow:hidden}
+/* posições fixas no grid: um elemento que alguma extensão do navegador injete no <body> não pode empurrar o trilho e o app */
+body>.rail{grid-column:1;grid-row:1}
+body>.appmain{grid-column:2;grid-row:1}
 button,select,input,textarea{font:inherit;color:inherit}
 svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 button{font-size:13.5px;font-weight:600;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);padding:0 14px;height:40px;border-radius:10px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px}
@@ -677,6 +680,8 @@ dialog.tour[open]{display:flex}
 }
 @media (max-width:760px){
   body{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+  body>.rail{grid-column:1;grid-row:2}
+  body>.appmain{grid-column:1;grid-row:1}
   .rail{grid-row:2;flex-direction:row;justify-content:space-around;padding:4px 6px calc(4px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid #22201D;gap:2px}
   .rail .logo,.rail .railspacer,.rail .avatar,#installBtn{display:none !important}
   .rail .status{order:9;margin:0;max-width:56px}
