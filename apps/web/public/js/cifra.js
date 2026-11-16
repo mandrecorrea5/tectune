@@ -77,7 +77,7 @@ export function sheetHTML(text, cols) {
   let h = `<div class="ph"><div><h1>${esc(m.title || 'Sem título')}</h1>${m.artist ? `<div class="artist">${esc(m.artist)}</div>` : ''}</div>
     <div class="metas">${metas.map(x => `<div class="meta"><span>${x[0]}</span><b>${esc(x[1])}</b></div>`).join('')}</div></div>`;
   if (m.notes) h += `<div class="gnotes">${esc(m.notes)}</div>`;
-  if (!song.sections.length) h += `<div class="empty">Escreva as seções e compassos no editor.<br>Ex.: <code>| G | D | Em | C |</code></div>`;
+  if (!song.sections.length) h += `<div class="empty">Esta música ainda não tem nenhuma seção.</div>`;
   const pauta = viewOf(song) === 'pauta';
   h += `<div class="body${pauta ? ' pauta' : ''}">`;
   const lens = sectionLengths(song);

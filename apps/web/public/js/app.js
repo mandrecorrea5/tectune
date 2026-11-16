@@ -10,18 +10,14 @@ import { resolveCoverScale } from './cifra.js';
 
 const $ = id => document.getElementById(id);
 const LAST_KEY = 'grade-cifras-ultima-setlist';
+// música nova começa sem estrutura: quem monta as seções (e a ordem delas) é o músico
 const NEW_SONG = `título: Nova música
 artista:
 tom: C
 bpm: 90
 compasso: 4/4
-
-[Intro]
-| C | % | G | % |
-
-[Verso]
-| C | Am | F | G |
 `;
+const SECTION_PICKS = ['Intro', 'Verso', 'Pré-refrão', 'Refrão', 'Ponte', 'Solo', 'Final'];
 
 /* ---------------- link do show (convidado, sem conta) ---------------- */
 // /s/<token> abre o show só para ver e acompanhar o ao vivo
@@ -328,8 +324,8 @@ $('songNew').onclick = async () => {
   try {
     const song = await api('POST', '/songs', { content: NEW_SONG });
     await setOrder([...ids(), song.id], sl.songs.length);
-    selBar = '0:0'; go('song');
-    toast('Música criada: toque nos compassos para trocar os acordes');
+    selBar = null; go('song');
+    toast('Música criada: comece adicionando a primeira seção');
   } catch (err) { toast(err.message); }
 };
 
@@ -551,6 +547,16 @@ function renderPreview() {
 // cor de cada seção, compasso selecionado e o "+ compasso" no fim de cada seção
 function decorateSheet() {
   const s = curSong(); const song = parseSong(s.content);
+  if (!song.sections.length) {
+    const empty = $('sheet').querySelector('.empty');
+    if (empty && isAdmin() && !isPalco()) {
+      empty.className = 'empty startsec';
+      empty.innerHTML = `<b>Comece pela estrutura</b>
+        <span>Adicione a primeira seção da música. Depois é só tocar no compasso e colocar os acordes e a letra; quando acabar, adicione a próxima.</span>
+        <div class="secpicks">${SECTION_PICKS.map(n => `<button type="button" data-newsec="${esc(n)}">${esc(n)}</button>`).join('')}
+        <button type="button" data-newsec="?" class="ghost">Outro nome…</button></div>`;
+    }
+  }
   const secs = [...$('sheet').querySelectorAll('.body > .sec')];
   secs.forEach((el, si) => {
     const sec = song.sections[si]; if (!sec) return;
@@ -773,7 +779,7 @@ function putChord(ch, { split = splitOn } = {}) {
   const text = curSong().content, sg = parseSong(text);
   if (!selBar) {
     const last = sg.sections.length - 1;
-    if (last < 0) { applyEdit({ text: appendSection(text, 'Intro'), id: '+0' }); return putChord(ch, { split }); }
+    if (last < 0) { pendingChord = [ch]; openSectionDialog(); return; }
     selBar = '+' + last;
   }
   if (isNew()) {
@@ -820,6 +826,7 @@ $('chordIn').addEventListener('keydown', e => {
     else if (toks.length === 1) putChord(toks[0]);
     else if (isNew()) { const si = secOf(selBar); applyEdit({ text: appendBar(curSong().content, si, song(), toks).text, id: '+' + si }); }
     else if (selBar) { const sg = song(); const r = setBarChords(curSong().content, selBar, sg, toks); applyEdit({ text: r.text, id: nextSel(sg, selBar) }); }
+    else if (!song().sections.length) { pendingChord = toks; openSectionDialog(); }
     else toks.forEach(t => putChord(t, { split: true }));
     i.value = '';
   } else if (e.key === ' ' && v) {
@@ -917,15 +924,37 @@ $('structList').addEventListener('click', e => {
   if (document.body.classList.contains('code')) setMode('visual');
   selectBar(n ? `${si}:0` : '+' + si, { scroll: true });
 });
-$('secAdd').onclick = () => { $('formSection').reset(); $('dlgSection').showModal(); $('formSection').name.focus(); };
+// nova seção: entra no fim da música com um compasso vazio já selecionado para receber os acordes
+let pendingChord = null; // acorde digitado antes de existir qualquer seção
+function openSectionDialog() {
+  $('formSection').reset();
+  $('secHint').hidden = !!song().sections.length;
+  $('dlgSection').showModal(); $('formSection').name.focus();
+}
+function addSection(name) {
+  name = String(name || '').trim(); if (!name || !curSong()) return;
+  if (document.body.classList.contains('code')) setMode('visual');
+  const text = appendSection(curSong().content, name);
+  const si = parseSong(text).sections.length - 1;
+  if (pendingChord) { // acordes digitados antes da seção existir entram no primeiro compasso dela
+    const toks = pendingChord; pendingChord = null;
+    const sg = parseSong(text); const r = setBarChords(text, `${si}:0`, sg, toks);
+    applyEdit({ text: r.text, id: nextSel(sg, `${si}:0`) });
+  } else applyEdit({ text, id: `${si}:0` });
+  setTimeout(() => { const el = $('sheet').querySelector('.bar.sel, .addbar.sel'); el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); $('chordIn')?.focus(); }, 30);
+}
+$('secAdd').onclick = openSectionDialog;
 $('secPicks').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { $('formSection').name.value = b.textContent; $('formSection').requestSubmit(); } });
 $('formSection').addEventListener('submit', e => {
   e.preventDefault();
-  const name = e.target.name.value.trim(); if (!name || !curSong()) return;
-  $('dlgSection').close();
-  const text = appendSection(curSong().content, name);
-  applyEdit({ text, id: '+' + (parseSong(text).sections.length - 1) });
-  setTimeout(() => { const el = $('sheet').querySelector('.addbar.sel'); el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); $('chordIn').focus(); }, 30);
+  const name = e.target.name.value.trim(); if (!name) return;
+  addSection(name); $('dlgSection').close();
+});
+$('dlgSection').addEventListener('close', () => { pendingChord = null; });
+// música sem nenhuma seção: a folha vira o ponto de partida
+$('sheet').addEventListener('click', e => {
+  const b = e.target.closest('[data-newsec]'); if (!b) return;
+  if (b.dataset.newsec === '?') openSectionDialog(); else addSection(b.dataset.newsec);
 });
 
 // Pauta: cada compasso com a largura que suas cifras pedem e as linhas quebrando como numa partitura.

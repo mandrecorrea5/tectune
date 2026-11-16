@@ -2,11 +2,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { parseSong, transposeText, validateSong } from '@tectune/core';
+import { appendSection, parseSong, transposeText, validateSong } from '@tectune/core';
 import { useData } from '../../lib/store';
 import Sheet from '../../components/Sheet';
 import { Button, Empty } from '../../components/ui';
 import { C } from '../../lib/theme';
+
+const SECTION_PICKS = ['Intro', 'Verso', 'Pré-refrão', 'Refrão', 'Ponte', 'Solo', 'Final'];
 
 export default function Edit() {
   const { id } = useLocalSearchParams();
@@ -31,6 +33,15 @@ export default function Edit() {
   }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const parsed = useMemo(() => parseSong(text ?? ''), [text]);
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [otherName, setOtherName] = useState('');
+  // nova seção no fim, já com um compasso para receber os acordes
+  const addSection = name => {
+    name = String(name || '').trim(); if (!name) return;
+    setText(t => appendSection(t ?? '', name));
+    setOtherOpen(false); setOtherName('');
+    if (!split) setTab('texto');
+  };
   const issues = useMemo(() => validateSong(parsed), [parsed]);
   if (!song) return <Empty title="Música não encontrada" />;
   const errors = issues.filter(i => i.level === 'error').length;
@@ -88,6 +99,25 @@ export default function Edit() {
           </>
         )}
       </View>
+      {readonly ? null : (
+        <View style={st.secRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.secChips} keyboardShouldPersistTaps="handled">
+            <Text style={st.secL}>{parsed.sections.length ? '+ Seção' : 'Comece por uma seção:'}</Text>
+            {SECTION_PICKS.map(n => (
+              <Pressable key={n} testID={`sec-${n}`} onPress={() => addSection(n)} style={st.chip}><Text style={st.chipT}>{n}</Text></Pressable>
+            ))}
+            {otherOpen ? (
+              <View style={st.other}>
+                <TextInput testID="sec-name" autoFocus value={otherName} onChangeText={setOtherName} placeholder="Nome da seção"
+                  onSubmitEditing={() => addSection(otherName)} returnKeyType="done" style={st.otherIn} />
+                <Pressable onPress={() => addSection(otherName)} style={[st.chip, st.chipOk]}><Text style={[st.chipT, { color: '#fff' }]}>Criar</Text></Pressable>
+              </View>
+            ) : (
+              <Pressable testID="sec-other" onPress={() => setOtherOpen(true)} style={[st.chip, st.chipGhost]}><Text style={st.chipT}>Outro nome…</Text></Pressable>
+            )}
+          </ScrollView>
+        </View>
+      )}
       <Text style={[st.state, { color: errors ? C.danger : song.dirty || text !== song.content ? C.warn : C.ok }]}>
         {errors ? `${errors} ${errors === 1 ? 'erro' : 'erros'} de formatação · ` : ''}
         {text !== song.content ? 'Salvando no celular…' : song.dirty ? (syncError ? 'Salvo no celular · será enviado quando houver conexão' : 'Salvo no celular · enviando…') : 'Salvo e sincronizado'}
@@ -110,6 +140,15 @@ const st = StyleSheet.create({
   tabOn: { backgroundColor: C.ink },
   tabT: { fontWeight: '700', color: C.ink },
   tomL: { fontWeight: '700', color: C.ink, marginRight: 2 },
+  secRow: { borderBottomWidth: 1, borderBottomColor: C.line, backgroundColor: C.panel },
+  secChips: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8 },
+  secL: { fontWeight: '700', color: C.muted, marginRight: 2, fontSize: 13 },
+  chip: { borderWidth: 1, borderColor: C.line, backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  chipGhost: { borderStyle: 'dashed' },
+  chipOk: { backgroundColor: C.ink, borderColor: C.ink },
+  chipT: { fontWeight: '700', color: C.ink, fontSize: 13.5 },
+  other: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  otherIn: { borderWidth: 1, borderColor: C.line, backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, minWidth: 150, color: C.ink },
   state: { fontSize: 12.5, fontWeight: '600', paddingHorizontal: 14, paddingVertical: 6 },
   issues: { maxHeight: 150, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: C.line },
   issue: { fontSize: 13, color: C.ink, lineHeight: 18 },

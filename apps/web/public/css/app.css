@@ -324,6 +324,10 @@ body.code .dock,body.readonly .dock,body.palco .dock{display:none}
 .rest svg{height:1.15em;width:auto;display:block;fill:currentColor;stroke:none}
 .empty{color:var(--muted);font-size:15px;text-align:center;padding:60px 20px;line-height:1.6;border:1.5px dashed var(--line2);border-radius:16px}
 .empty code{font-family:var(--mono);color:var(--ink2)}
+.empty.startsec{display:flex;flex-direction:column;align-items:center;gap:10px;padding:44px 22px}
+.empty.startsec b{font-size:18px;color:var(--ink)}
+.empty.startsec span{max-width:440px}
+.empty.startsec .secpicks{justify-content:center;margin:8px 0 0}
 .lyr{position:absolute;left:4px;top:calc(100% + 4px);font-style:italic;font-size:max(11px, calc(13px * var(--s)));line-height:1.3;color:#C9C2B7;white-space:normal;overflow-wrap:anywhere;pointer-events:none;z-index:1}
 .row.withlyr{margin-bottom:calc(8px * var(--s))}
 .bar .mel{position:absolute;left:5px;top:3px;font-size:calc(12px * var(--s));color:var(--accent2);font-weight:800;line-height:1}

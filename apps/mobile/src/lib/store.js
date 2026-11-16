@@ -12,17 +12,12 @@ import {
 const OLD_KEY = 'grade-cifras:dados:v1'; // versão anterior (AsyncStorage)
 export const newId = () => Crypto.randomUUID();
 
+// música nova começa sem estrutura: o músico adiciona as seções na ordem que quiser
 export const NEW_SONG = `título: Nova música
 artista:
 tom: C
 bpm: 90
 compasso: 4/4
-
-[Intro]
-| C | % | G | % |
-
-[Verso]
-| C | Am | F | G |
 `;
 
 // Traz os dados da versão anterior do app (antes do SQLite), uma única vez
