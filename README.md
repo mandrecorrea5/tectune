@@ -14,8 +14,16 @@
   como os pedais Bluetooth) música anterior/próxima, **Esc** sai do palco.
   Em 6/8, 9/8 e 12/8 o BPM conta a semínima pontuada (♩.).
 
+- **Editor visual**: toque no compasso e no acorde (a barra embaixo sugere os acordes do tom e os já usados),
+  ou digite o acorde e aperte Enter para pôr e avançar (espaço divide o compasso). Repetição, casas, anotação e
+  letra ficam no painel do compasso. O modo **Código** mostra o mesmo texto de sempre: os dois editam a mesma cifra.
+  ⌘Z desfaz; ← → andam pelos compassos; Delete apaga.
+- **Link do show (sem cadastro)**: o admin cria um link (com QR code) e manda pelo WhatsApp. Quem abre escolhe o
+  instrumento e o nome, vê as cifras e acompanha o ao vivo. Só leitura. O link pode ser trocado ou desligado.
+- **Curva de energia**: o BPM de cada música na ordem do show, para montar a sequência
 - **Contas e bandas**: cadastro e login, convites, admins editam e membros acompanham
-- **Show ao vivo**: o diretor dá o play e todos os aparelhos da banda seguem no mesmo compasso (visão músico ou cantor)
+- **Show ao vivo**: quem conduz dá o play e todos os aparelhos (inclusive quem entrou pelo link) seguem no mesmo
+  compasso; o palco abre sozinho em quem está seguindo (visão acordes ou letra)
 
 Stack: Node.js 22 + Express, PostgreSQL 16, front-end em HTML/JS puro (jsPDF incluído localmente)
 e app mobile em React Native (Expo).
@@ -119,6 +127,10 @@ obs: observação geral da música
 | GET | `/api/songs?q=` | biblioteca, com busca por título/artista |
 | POST | `/api/songs` | cria `{ content }` |
 | GET/PUT/DELETE | `/api/songs/:id` | lê, atualiza `{ content }` / `{ font_scale }` ou apaga a música |
+| POST | `/api/setlists/:id/share` | cria o link do show (ou devolve o atual); `{ reset: true }` troca por um novo |
+| DELETE | `/api/setlists/:id/share` | desliga o link (quem estava pelo link sai do ao vivo) |
+| GET | `/api/public/shows/:token` | show pelo link, sem conta (só leitura) |
+| GET | `/s/:token` | página do show pelo link |
 | GET | `/api/sync` | tudo de uma vez (setlists com a ordem + músicas) |
 | POST | `/api/sync` | sincronização do app offline-first: `{ since, changes: { songs, setlists, deletions } }` → o que mudou no servidor |
 

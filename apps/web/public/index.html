@@ -2,167 +2,337 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tectune</title>
-<meta name="description" content="Tectune: cifras em grade de compasso, setlists, PDF e show ao vivo com a banda inteira no mesmo tempo.">
-<meta name="theme-color" content="#1C1917">
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="stylesheet" href="vendor/fonts/fonts.css">
-<link rel="stylesheet" href="css/app.css">
-<script src="vendor/jspdf.umd.min.js"></script>
+<meta name="description" content="Tectune: cifre tocando no compasso, monte o repertório e mande um link para a banda tocar junto, no mesmo compasso.">
+<meta name="theme-color" content="#0E0D0C">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="/css/app.css">
+<script src="/vendor/jspdf.umd.min.js"></script>
+<script src="/vendor/qrcode.js"></script>
 </head>
-<body>
-<header class="topbar">
-  <div class="brand"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
-  <div class="bandpick">
-    <select id="bandSelect" aria-label="Banda" title="Banda ativa"></select>
-    <button id="bandBtn" class="ghost" title="Membros, convites e conta">Banda</button>
-  </div>
-  <div class="slpick">
-    <select id="slSelect" aria-label="Setlist"></select>
-    <button id="slEdit" class="ghost" title="Editar setlist">Editar</button>
-    <button id="slNew">+ Nova setlist</button>
-  </div>
-  <div class="spacer"></div>
-  <span id="status" class="status"><i></i><span>Carregando…</span></span>
-  <button id="btnPdfSong">Ver PDF da música</button>
-  <button id="btnPdfSetlist" title="Configurar e imprimir só a lista de músicas">Folha do setlist</button>
-  <button id="btnPdfAll" class="primary">Ver PDF do show</button>
-  <button id="mMenuBtn" class="mmenu" type="button" aria-label="Menu" title="Menu"><span></span><span></span><span></span></button>
-</header>
+<body data-view="show">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+  <symbol id="i-band" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.6 3 5.2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><path d="M12 3v18M4 7h5M15 7h5M4 17h5M15 17h5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></symbol>
+</svg>
 
-<div id="inviteBar" class="invitebar" hidden></div>
-<main id="main">
-  <section class="col songs">
-    <div class="colhead">
-      <div class="slinfo"><span id="slTitle">—</span><small id="slMeta"></small></div>
-    </div>
-    <div class="songbtns">
-      <button id="songNew">+ Nova música</button>
-      <button id="songLib">+ Da biblioteca</button>
-    </div>
-    <ol id="songList"></ol>
-  </section>
-
-  <section class="col editor">
-    <div class="colhead">
-      Cifra <span class="ro-note">· só leitura (você é membro desta banda)</span>
-      <span class="spacer"></span>
-      <span class="tgroup vseg" title="Como a cifra aparece na prévia, no palco e no PDF">Ver
-        <button id="vBox" type="button">Caixas</button><button id="vStaff" type="button">Pauta</button></span>
-      <span class="tgroup">Tom <button id="tDown" title="Descer meio tom">−½</button><button id="tUp" title="Subir meio tom">+½</button></span>
-      <span class="tgroup">Tamanho
-        <select id="scale" title="Tamanho da cifra na folha">
-          <option value="0">Auto (1 folha)</option>
-          <option value="100">100%</option><option value="95">95%</option><option value="90">90%</option>
-          <option value="85">85%</option><option value="80">80%</option><option value="75">75%</option>
-          <option value="70">70%</option><option value="65">65%</option><option value="60">60%</option>
-          <option value="55">55%</option><option value="50">50%</option>
-          <option value="45">45%</option><option value="40">40%</option><option value="35">35%</option><option value="30">30%</option>
-        </select>
-      </span>
-      <span class="tgroup">Compassos/linha
-        <select id="cols"><option>4</option><option>6</option><option>8</option></select>
-      </span>
-    </div>
-    <div id="issues" class="issues" hidden></div>
-    <textarea id="text" spellcheck="false" aria-label="Texto da cifra" disabled></textarea>
-    <details class="help">
-      <summary>Como escrever</summary>
-      <table>
-        <tr><td>título: / artista:</td><td>Cabeçalho da música. Também: <b>tom:</b>, <b>bpm:</b>, <b>compasso:</b>, <b>capo:</b>, <b>obs:</b></td></tr>
-        <tr><td>[Refrão] x2</td><td>Começa uma seção; o <b>x2</b> é opcional</td></tr>
-        <tr><td>&gt; texto</td><td>Observação da seção (dinâmica, quem toca, etc.)</td></tr>
-        <tr><td>| G | D | Em | C |</td><td>Uma linha de compassos. Cada <b>|</b> separa um compasso</td></tr>
-        <tr><td>compasso: 6/8</td><td>Define quantos tempos cabem em cada bloco: 4/4 = 4 semínimas, 3/4 = 3, 6/8 = 6 colcheias. Passou disso, é erro</td></tr>
-        <tr><td>| C G |</td><td>Dois acordes: o compasso é dividido igualmente (em 4/4, 2 tempos cada)</td></tr>
-        <tr><td>| C / / G |</td><td><b>/</b> = mais um tempo do acorde anterior: C nos 3 primeiros, G no último</td></tr>
-        <tr><td>| C D E F |</td><td>Um acorde por tempo (4/4)</td></tr>
-        <tr><td>| % |</td><td>Repete o compasso anterior</td></tr>
-        <tr><td>|: G | D :| x3</td><td>Ritornelo (barra de repetição), com nº de vezes opcional</td></tr>
-        <tr><td>| 1. C | 2. D |</td><td>Casa 1 / casa 2</td></tr>
-        <tr><td>|: A | B | C | 1-3. D :| x4 | 4. E |</td><td>Bloco tocado 4 vezes (16 compassos) com o último compasso diferente na 4ª vez. Casas aceitam <b>1-3.</b>, <b>1,2.</b>, <b>4.</b>; uma casa que vai até o <b>:|</b> cobre todos os compassos até ele</td></tr>
-        <tr><td>| D "breque" |</td><td>Anotação em cima do compasso</td></tr>
-        <tr><td>| C - |</td><td><b>-</b> (ou <b>pausa</b>) = pausa naquele tempo. <code>| - |</code> = compasso inteiro de pausa</td></tr>
-        <tr><td>| _ |</td><td>Compasso vazio · <b>N.C.</b> = sem acorde</td></tr>
-        <tr><td>formato: pauta</td><td>Mostra as cifras dentro do pentagrama, um bloco por compasso (botões <b>Caixas / Pauta</b> acima)</td></tr>
-        <tr><td>voz: texto</td><td>Entrada da voz na seção, com a letra (opcional) embaixo do compasso. <b>voz 5: texto</b> marca o compasso 5 da seção; várias linhas <b>voz:</b> sem número se espalham pela seção; <b>voz 5:</b> sem texto só marca a entrada</td></tr>
-        <tr><td>voz 1 [2]: texto</td><td>Letra de uma <b>passada</b> do ritornelo: compasso 1 na <b>2ª vez</b> (também vale <b>voz 1 2ª vez:</b>). Embaixo do compasso aparecem numeradas (1., 2., 3.…) e na visão Cantor cada vez mostra a sua</td></tr>
-        <tr><td>| Am {A2 c2 e2 a2} |</td><td>Frase com notas no compasso (notação ABC: <b>A2</b> = semínima, <b>A</b> = colcheia, <b>z</b> = pausa, <b>^F</b> sustenido, <b>_B</b> bemol). O sistema confere se as notas somam o compasso e transpõe junto com o tom</td></tr>
-      </table>
-    </details>
-  </section>
-
-  <section class="col preview">
-    <!-- modo Show: sem editor; para sair é preciso confirmar -->
-    <div class="showbar palco-only-flex">
-      <button id="showExit" type="button">Sair do show</button>
-      <span id="showTitle" class="showtitle"></span>
-      <span class="vseg sview" title="Visão deste aparelho">
-        <button id="svMusico" type="button">Músico</button><button id="svCantor" type="button">Cantor</button>
-      </span>
-      <button id="liveBtn" type="button" class="livebtn" title="Show ao vivo: o diretor dá o play e a banda acompanha"><i></i><span>Ao vivo</span></button>
-    </div>
-    <div class="colhead phead">
-      <span class="ptitle">Prévia da folha</span>
-      <span id="pages" class="pages" hidden></span>
-      <span class="spacer"></span>
-      <div class="pctl" id="pctl">
-        <button id="pPrev" class="ghost palco-only" title="Música anterior (←)">⏮</button>
-        <button id="pPlay" class="playbtn" title="Tocar / pausar (espaço)">▶</button>
-        <button id="pStop" class="ghost" title="Parar">■</button>
-        <span class="ptempo">
-          <button id="pSlower" class="ghost" title="Mais devagar">−</button>
-          <span id="pTempo" title="Clique para voltar a 100%">♩ = 90</span>
-          <button id="pFaster" class="ghost" title="Mais rápido">+</button>
-        </span>
-        <span class="ptom palco-only" title="Mudar o tom sem parar a música">Tom <b id="pKey">—</b>
-          <button id="pKeyDown" class="ghost" title="Descer meio tom">−½</button><button id="pKeyUp" class="ghost" title="Subir meio tom">+½</button>
-        </span>
-        <button id="pNext" class="ghost palco-only" title="Próxima música (→)">⏭</button>
-        <button id="pZoomOut" class="ghost palco-only" title="Diminuir">A−</button>
-        <button id="pZoomIn" class="ghost palco-only" title="Aumentar">A+</button>
-        <button id="pCount1" class="ghost ctoggle" title="Contagem de 1 compasso antes de começar (clique para ligar/desligar)">Contagem</button>
-        <button id="pPalco" title="Modo Show: tela cheia, sem editor, para tocar o show">▶ Modo Show</button>
-      </div>
-    </div>
-    <div class="pinfo"><span id="pInfo"></span><span class="pkeys">espaço: tocar/pausar · clique num compasso para começar dali</span></div>
-    <div class="scroll" id="pScroll"><div id="sheet" class="page"></div></div>
-    <div id="pCount" class="pcount" hidden><b>1</b><small>contagem</small></div>
-    <div id="pDone" class="pdone" hidden><span>Fim da música</span><button id="pDoneNext" class="primary">Próxima ▶</button></div>
-  </section>
-</main>
-
-<!-- celular: uma tela por vez, com abas embaixo -->
-<nav id="mTabs" class="mtabs" aria-label="Telas">
-  <button type="button" data-tab="songs"><i class="ic ic-list"></i>Músicas</button>
-  <button type="button" data-tab="editor"><i class="ic ic-edit"></i>Cifra</button>
-  <button type="button" data-tab="preview"><i class="ic ic-page"></i>Folha</button>
-  <button type="button" id="mShow" class="mshow"><i class="ic ic-play"></i>Show</button>
+<!-- trilho de navegação (no celular vira a barra de baixo) -->
+<nav class="rail" aria-label="Navegação">
+  <div class="logo" aria-label="Tectune" role="img"><b></b><b></b><b></b><b></b></div>
+  <button type="button" class="railbtn" data-go="show" aria-label="Show e repertório"><svg aria-hidden="true"><use href="#i-list"/></svg><span>Show</span></button>
+  <button type="button" class="railbtn" data-go="song" aria-label="Cifra da música"><svg aria-hidden="true"><use href="#i-music"/></svg><span>Cifra</span></button>
+  <button type="button" class="railbtn railplay" id="mShow" aria-label="Tocar"><svg aria-hidden="true"><use href="#i-play"/></svg><span>Tocar</span></button>
+  <button type="button" class="railbtn member-only" id="bandBtn" aria-label="Banda, membros e conta"><svg aria-hidden="true"><use href="#i-band"/></svg><span>Banda</span></button>
+  <span class="railspacer"></span>
+  <span id="status" class="status" title="Salvamento"><i></i><span>Carregando…</span></span>
+  <button type="button" class="avatar member-only" id="acctBtn" aria-label="Sua conta">?</button>
 </nav>
 
-<!-- celular: menu com as ações do topo -->
-<dialog id="dlgMenu" class="sheet">
-  <div class="sheethead"><b>Menu</b><button type="button" class="ghost" data-close aria-label="Fechar">✕</button></div>
-  <div class="menulist">
-    <button type="button" data-proxy="bandBtn">Banda, membros e conta</button>
-    <button type="button" data-proxy="slEdit" class="admin-only">Editar esta setlist</button>
-    <button type="button" data-proxy="slNew" class="admin-only">+ Nova setlist</button>
-    <hr>
-    <button type="button" data-proxy="btnPdfSong">PDF da música</button>
-    <button type="button" data-proxy="btnPdfSetlist">Folha do setlist</button>
-    <button type="button" data-proxy="btnPdfAll" class="primary">PDF do show completo</button>
-  </div>
-</dialog>
+<div class="appmain">
+  <div id="inviteBar" class="invitebar" hidden></div>
 
-<!-- Setlist: criar / editar -->
+  <!-- ============ SHOW: repertório + compartilhar ============ -->
+  <section id="vShow" class="view" aria-label="Show">
+    <div class="showtop">
+      <label class="pick member-only"><span class="sr">Banda</span><select id="bandSelect" aria-label="Banda ativa"></select></label>
+      <label class="pick"><span class="sr">Show</span><select id="slSelect" aria-label="Show (setlist)"></select></label>
+      <button type="button" id="slEdit" class="ghost admin-only">Editar show</button>
+      <button type="button" id="slNew" class="ghost admin-only"><svg aria-hidden="true"><use href="#i-plus"/></svg>Novo show</button>
+      <span class="guest-only guesttag">Você entrou pelo link do show · só visualização</span>
+    </div>
+
+    <header class="showhead">
+      <div class="showtitle">
+        <p class="eyebrow" id="slWhen"></p>
+        <h1 id="slTitle">—</h1>
+        <p class="showmeta" id="slMeta"></p>
+      </div>
+      <div class="showacts">
+        <button type="button" id="btnPdfAll"><svg aria-hidden="true"><use href="#i-print"/></svg>PDF do show</button>
+        <button type="button" id="btnPdfSetlist">Folha do setlist</button>
+        <button type="button" id="songLib" class="admin-only">Da biblioteca</button>
+        <button type="button" id="songNew" class="light admin-only"><svg aria-hidden="true"><use href="#i-plus"/></svg>Nova música</button>
+      </div>
+    </header>
+
+    <div class="showgrid">
+      <div class="showmain">
+        <section class="card curve" aria-labelledby="curveH">
+          <div class="cardhead"><h2 id="curveH">Curva de energia</h2><span class="hint">BPM de cada música na ordem do show. Reordene e veja a curva mudar.</span></div>
+          <div id="curve" class="curvebars" role="img" aria-label="BPM das músicas na ordem do show"></div>
+        </section>
+        <ol id="songList" class="setrows" aria-label="Ordem do show"></ol>
+      </div>
+
+      <aside class="showside">
+        <section class="sharecard" id="shareCard" aria-labelledby="shareH">
+          <div>
+            <h2 id="shareH">Chame a banda</h2>
+            <p>Um link abre o show no celular de cada músico. Sem baixar app e sem criar conta.</p>
+          </div>
+          <div id="shareOffBox" class="shareoff">
+            <button type="button" id="shareCreate" class="dark big admin-only"><svg aria-hidden="true"><use href="#i-link"/></svg>Criar link do show</button>
+            <p class="hint not-admin">Peça a um admin da banda para criar o link do show.</p>
+          </div>
+          <div id="shareOnBox" class="shareon" hidden>
+            <div class="qrrow">
+              <div id="qr" class="qr" role="img" aria-label="QR code do link do show"></div>
+              <p>No ensaio, mostre o QR na tela: quem apontar a câmera já entra no show.</p>
+            </div>
+            <div class="linkrow">
+              <label>Link do show<input id="shareUrl" readonly></label>
+              <button type="button" id="shareCopy" class="dark">Copiar</button>
+            </div>
+            <div class="sharebtns">
+              <a id="shareWa" class="btn" target="_blank" rel="noopener">WhatsApp</a>
+              <a id="shareMail" class="btn">E-mail</a>
+              <button type="button" id="shareNative" hidden>Compartilhar…</button>
+            </div>
+            <p class="sharenote">Quem abre o link vê as cifras e acompanha o ao vivo. Para editar, convide pela banda.</p>
+            <div class="sharemgmt admin-only">
+              <button type="button" id="shareReset" class="link">Trocar link</button>
+              <button type="button" id="shareOff" class="link">Desligar link</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card member-only" aria-labelledby="bandH">
+          <div class="cardhead"><h2 id="bandH">Banda</h2><button type="button" id="bandInvite" class="link admin-only">Convidar</button></div>
+          <ul id="bandList" class="bandlist"></ul>
+        </section>
+
+        <button type="button" id="goLive" class="golive"><i></i>Começar o show ao vivo</button>
+        <button type="button" id="goFollow" class="ghost wide">Seguir quem está conduzindo</button>
+        <p class="hint center" id="liveHint">Quem conduz dá o play. Quem estiver com o show aberto acompanha no mesmo compasso.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ MÚSICA: estúdio (cifra visual) ============ -->
+  <section id="vSong" class="view" aria-label="Cifra">
+    <header class="songtop">
+      <button type="button" id="backShow" class="crumb"><svg aria-hidden="true"><use href="#i-left"/></svg><span id="crumbShow">Show</span></button>
+      <span class="crumbpos" id="songPos"></span>
+      <button type="button" id="songPrev" class="iconbtn" aria-label="Música anterior"><svg aria-hidden="true"><use href="#i-left"/></svg></button>
+      <button type="button" id="songNext" class="iconbtn" aria-label="Próxima música"><svg aria-hidden="true"><use href="#i-right"/></svg></button>
+      <span class="spacer"></span>
+      <button type="button" id="shareJump" class="ghostline"><svg aria-hidden="true"><use href="#i-link"/></svg>Compartilhar</button>
+      <button type="button" id="pPalco" class="accent"><svg aria-hidden="true"><use href="#i-play"/></svg>Tocar</button>
+    </header>
+
+    <section class="songhead">
+      <div class="songname">
+        <p class="eyebrow" id="shArtist"></p>
+        <h1 id="shTitle">—</h1>
+      </div>
+      <div class="chips">
+        <div class="chip keychip">
+          <button type="button" id="tDown" aria-label="Descer meio tom">−</button>
+          <span><small>TOM</small><b id="shKey">—</b></span>
+          <button type="button" id="tUp" aria-label="Subir meio tom">+</button>
+        </div>
+        <div class="chip"><small>BPM</small><b id="shBpm">—</b></div>
+        <div class="chip"><small>FÓRMULA</small><b id="shTime">4/4</b></div>
+        <div class="chip"><small>DURAÇÃO</small><b id="shDur">—</b></div>
+      </div>
+    </section>
+
+    <div class="modebar">
+      <div class="seg" role="group" aria-label="Modo de edição">
+        <button type="button" id="mVisual" class="on">Visual</button><button type="button" id="mCode">Código</button>
+      </div>
+      <div class="seg small" role="group" aria-label="Como a cifra aparece (tela, palco e PDF)">
+        <button type="button" id="vBox">Caixas</button><button type="button" id="vStaff">Pauta</button>
+      </div>
+      <span class="modehint visual-only">Toque num compasso e escolha o acorde embaixo.</span>
+      <span class="modehint code-only">Os dois modos editam a mesma cifra.</span>
+      <span class="spacer"></span>
+      <span id="issuesSum" class="issuessum"></span>
+      <span class="ro-note">Só leitura</span>
+    </div>
+
+    <div class="songgrid">
+      <main class="stage">
+        <!-- palco: controles do play (só no modo Show) -->
+        <div class="showbar palco-only-flex">
+          <button type="button" id="showExit">Sair</button>
+          <span id="showTitle" class="showtitle2"></span>
+          <span class="seg sview" title="Visão deste aparelho">
+            <button type="button" id="svMusico">Acordes</button><button type="button" id="svCantor">Letra</button>
+          </span>
+          <button type="button" id="liveBtn" class="livebtn" title="Show ao vivo"><i></i><span>Ao vivo</span></button>
+        </div>
+        <div class="pctl palco-only-flex" id="pctl">
+          <button type="button" id="pPrev" class="iconbtn" title="Música anterior (←)" aria-label="Música anterior"><svg aria-hidden="true"><use href="#i-left"/></svg></button>
+          <button type="button" id="pPlay" class="playbtn" title="Tocar / pausar (espaço)">▶</button>
+          <button type="button" id="pStop" class="ghost" title="Parar">■</button>
+          <button type="button" id="pNext" class="iconbtn" title="Próxima música (→)" aria-label="Próxima música"><svg aria-hidden="true"><use href="#i-right"/></svg></button>
+          <span class="ptempo">
+            <button type="button" id="pSlower" class="ghost" title="Mais devagar">−</button>
+            <span id="pTempo" title="Clique para voltar a 100%">♩ = 90</span>
+            <button type="button" id="pFaster" class="ghost" title="Mais rápido">+</button>
+          </span>
+          <span class="ptom" title="Mudar o tom sem parar a música">Tom <b id="pKey">—</b>
+            <button type="button" id="pKeyDown" class="ghost" title="Descer meio tom">−</button><button type="button" id="pKeyUp" class="ghost" title="Subir meio tom">+</button>
+          </span>
+          <button type="button" id="pZoomOut" class="ghost" title="Diminuir">A−</button>
+          <button type="button" id="pZoomIn" class="ghost" title="Aumentar">A+</button>
+          <button type="button" id="pCount1" class="ghost ctoggle" title="Contagem de 1 compasso antes de começar">Contagem</button>
+        </div>
+        <div class="pinfo palco-only-flex"><span id="pInfo"></span><span class="pkeys">espaço: tocar/pausar · ← → música · clique num compasso para começar dali</span></div>
+
+        <div id="issues" class="issues" hidden></div>
+        <div class="scroll" id="pScroll"><div id="sheet" class="page"></div></div>
+        <div class="codewrap">
+          <textarea id="text" spellcheck="false" aria-label="Texto da cifra" disabled></textarea>
+          <details class="help">
+            <summary>Como escrever</summary>
+            <table>
+              <tr><td>título: / artista:</td><td>Cabeçalho da música. Também: <b>tom:</b>, <b>bpm:</b>, <b>compasso:</b>, <b>capo:</b>, <b>obs:</b></td></tr>
+              <tr><td>[Refrão] x2</td><td>Começa uma seção; o <b>x2</b> é opcional</td></tr>
+              <tr><td>&gt; texto</td><td>Observação da seção (dinâmica, quem toca, etc.)</td></tr>
+              <tr><td>| G | D | Em | C |</td><td>Uma linha de compassos. Cada <b>|</b> separa um compasso</td></tr>
+              <tr><td>compasso: 6/8</td><td>Quantos tempos cabem em cada compasso: 4/4 = 4, 3/4 = 3, 6/8 = 6. Passou disso, é erro</td></tr>
+              <tr><td>| C G |</td><td>Dois acordes: o compasso é dividido igualmente</td></tr>
+              <tr><td>| C / / G |</td><td><b>/</b> = mais um tempo do acorde anterior</td></tr>
+              <tr><td>| % |</td><td>Repete o compasso anterior</td></tr>
+              <tr><td>|: G | D :| x3</td><td>Ritornelo, com nº de vezes opcional</td></tr>
+              <tr><td>| 1. C | 2. D |</td><td>Casa 1 / casa 2 (também <b>1-3.</b>, <b>1,2.</b>)</td></tr>
+              <tr><td>| D "breque" |</td><td>Anotação em cima do compasso</td></tr>
+              <tr><td>| C - |</td><td><b>-</b> (ou <b>pausa</b>) = pausa naquele tempo</td></tr>
+              <tr><td>| _ |</td><td>Compasso vazio · <b>N.C.</b> = sem acorde</td></tr>
+              <tr><td>formato: pauta</td><td>Cifras dentro do pentagrama (botões <b>Caixas / Pauta</b>)</td></tr>
+              <tr><td>voz 5: texto</td><td>Letra embaixo do compasso 5 da seção. <b>voz 1 [2]: texto</b> = só na 2ª vez do ritornelo</td></tr>
+              <tr><td>| Am {A2 c2 e2 a2} |</td><td>Frase com notas no compasso (notação ABC)</td></tr>
+            </table>
+          </details>
+        </div>
+        <div id="pCount" class="pcount" hidden><b>1</b><small>contagem</small></div>
+        <div id="pDone" class="pdone" hidden><span>Fim da música</span><button type="button" id="pDoneNext" class="accent">Próxima ▶</button></div>
+      </main>
+
+      <aside class="inspector">
+        <section class="card" id="barCard" aria-labelledby="barH">
+          <div class="cardhead"><h2 id="barH">Compasso</h2><span id="barWhere" class="where">Toque num compasso</span></div>
+          <div id="barBeats" class="beatsbox"></div>
+          <div class="barfields admin-only">
+            <label>Acordes<input id="barChords" autocomplete="off" spellcheck="false" placeholder="ex.: C G/B"></label>
+            <label>Letra neste compasso<input id="barLyric" autocomplete="off" placeholder="O trecho que o cantor canta aqui"></label>
+            <div class="two">
+              <label>Anotação<input id="barNote" autocomplete="off" placeholder="breque, só bateria…"></label>
+              <label>Casa<input id="barEnding" autocomplete="off" inputmode="numeric" placeholder="1, 2, 1-3"></label>
+            </div>
+            <div class="bartools">
+              <button type="button" id="barRepStart" class="tool" title="Início da repetição">|:</button>
+              <button type="button" id="barRepEnd" class="tool" title="Fim da repetição">:|</button>
+              <label class="times" id="barTimesL">vezes<input id="barTimes" type="number" min="2" max="99" value="2"></label>
+              <span class="spacer"></span>
+              <button type="button" id="barDel" class="tool danger" title="Apagar compasso (Delete)"><svg aria-hidden="true"><use href="#i-trash"/></svg></button>
+            </div>
+          </div>
+          <p class="hint ro-show">Só os admins da banda editam a cifra.</p>
+        </section>
+
+        <section class="card" aria-labelledby="structH">
+          <div class="cardhead"><h2 id="structH">Estrutura</h2></div>
+          <div id="structBar" class="structbar" aria-hidden="true"></div>
+          <ul id="structList" class="structlist"></ul>
+          <button type="button" id="secAdd" class="ghost wide admin-only"><svg aria-hidden="true"><use href="#i-plus"/></svg>Nova seção</button>
+        </section>
+
+        <section class="card" aria-labelledby="printH">
+          <div class="cardhead"><h2 id="printH">Impressão</h2><span id="pages" class="pages" hidden></span></div>
+          <label class="inline">Tamanho na folha
+            <select id="scale">
+              <option value="0">Auto (1 folha)</option>
+              <option value="100">100%</option><option value="95">95%</option><option value="90">90%</option>
+              <option value="85">85%</option><option value="80">80%</option><option value="75">75%</option>
+              <option value="70">70%</option><option value="65">65%</option><option value="60">60%</option>
+              <option value="55">55%</option><option value="50">50%</option>
+              <option value="45">45%</option><option value="40">40%</option><option value="35">35%</option><option value="30">30%</option>
+            </select>
+          </label>
+          <label class="inline">Compassos por linha<select id="cols"><option>4</option><option>6</option><option>8</option></select></label>
+          <button type="button" id="btnPdfSong" class="wide"><svg aria-hidden="true"><use href="#i-print"/></svg>PDF da música</button>
+        </section>
+      </aside>
+    </div>
+
+    <!-- barra de acordes -->
+    <div class="dock admin-only" id="dock" aria-label="Barra de acordes">
+      <div class="dockrow">
+        <span class="docklabel">NO TOM DE<b id="dockKeyName">—</b></span>
+        <div id="dockKey" class="chiprow"></div>
+        <span class="docksep" aria-hidden="true"></span>
+        <div id="dockUsed" class="chiprow"></div>
+      </div>
+      <div class="dockrow">
+        <button type="button" id="tSplit" class="tool" aria-pressed="false" title="Ligado: o acorde escolhido entra junto com os outros no mesmo compasso"><svg aria-hidden="true"><use href="#i-split"/></svg>Dividir compasso</button>
+        <button type="button" id="tSim" class="tool"><b>%</b>Repetir anterior</button>
+        <button type="button" id="tRest" class="tool"><b>–</b>Pausa</button>
+        <button type="button" id="tAdd" class="tool"><svg aria-hidden="true"><use href="#i-plus"/></svg>Compasso</button>
+        <span class="spacer"></span>
+        <label class="chordin"><span class="sr">Digite um acorde</span><input id="chordIn" autocomplete="off" spellcheck="false" placeholder="Digite: Am, G/B, C7M…"></label>
+        <span class="dockhint"><kbd>Enter</kbd> põe e avança · <kbd>Espaço</kbd> divide · <kbd>← →</kbd> navega</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- link do show: escolher o instrumento (sem cadastro) -->
+<div id="joinScreen" class="gate single" hidden>
+  <main class="gate-main">
+    <form id="joinForm" class="gatebox joinbox">
+      <div class="brand"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
+      <p class="joinwho" id="joinWho"></p>
+      <div class="joincard">
+        <h1 id="joinTitle">—</h1>
+        <p id="joinWhen"></p>
+        <p class="muted" id="joinCount"></p>
+      </div>
+      <fieldset class="insts">
+        <legend>O que você toca?</legend>
+        <div class="instgrid" id="instGrid">
+          <button type="button" data-inst="voz">Voz</button>
+          <button type="button" data-inst="harmonia">Violão / Guitarra</button>
+          <button type="button" data-inst="baixo">Baixo</button>
+          <button type="button" data-inst="teclado">Teclado</button>
+          <button type="button" data-inst="bateria">Bateria</button>
+          <button type="button" data-inst="outro">Outro</button>
+        </div>
+        <p class="insthint" id="instHint"></p>
+      </fieldset>
+      <label class="field"><span>Seu nome</span><input name="name" maxlength="40" autocomplete="name" placeholder="Como a banda te chama" required></label>
+      <p id="joinErr" class="gateerr" role="alert" hidden></p>
+      <button type="submit" class="accent big">Entrar no show</button>
+      <p class="hint center">Sem cadastro. Seu instrumento, nome e tom ficam salvos neste aparelho.</p>
+    </form>
+  </main>
+</div>
+
 <!-- login / cadastro -->
 <div id="authScreen" class="gate" hidden>
   <aside class="gate-hero" aria-hidden="true">
-    <div class="brand big light"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
+    <div class="brand"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
     <div class="hero-mid">
-      <h1>O repertório da banda, compasso por compasso.</h1>
-      <p>Cifras em grade ou na pauta, setlists, PDF para imprimir e o Show ao vivo: o diretor dá o play e todo mundo acompanha.</p>
+      <h1>Cifre tocando no compasso. Mande um link. A banda toca junto.</h1>
+      <p>Toque no compasso, toque no acorde. Monte o repertório e mande o link pelo WhatsApp: cada músico abre no celular, sem cadastro, e acompanha o seu play no mesmo compasso.</p>
       <div class="hero-grid">
         <span>INTRO</span>
         <div><i>Am</i><i>F</i><i>C</i><i>G</i></div>
@@ -170,11 +340,11 @@
         <div><i>F</i><i>G</i><i class="now">Am</i><i>%</i></div>
       </div>
     </div>
-    <p class="hero-foot">Admins editam · músicos acompanham · funciona no celular e no navegador</p>
+    <p class="hero-foot">Admins editam · músicos acompanham pelo link · celular, tablet e navegador</p>
   </aside>
   <main class="gate-main">
     <form id="authForm" class="gatebox" novalidate>
-      <div class="brand big mobile-only"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
+      <div class="brand mobile-only"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
       <div>
         <h2 id="authTitle">Entrar</h2>
         <p class="muted" id="authSub">Bem-vindo de volta! Entre para ver o repertório da sua banda.</p>
@@ -191,7 +361,7 @@
       <p id="authErr" class="gateerr" role="alert" hidden></p>
       <p id="authOk" class="gateok" role="status" hidden></p>
       <p class="resend" id="resendRow" hidden><button type="button" id="resendBtn" class="link">Reenviar e-mail de confirmação</button></p>
-      <button type="submit" class="primary big" id="authSubmit">Entrar</button>
+      <button type="submit" class="accent big" id="authSubmit">Entrar</button>
       <p class="switch"><span id="authSwitchText">Ainda não tem conta?</span> <button type="button" id="authSwitch" class="link">Criar conta</button></p>
     </form>
   </main>
@@ -201,7 +371,7 @@
 <div id="bandScreen" class="gate single" hidden>
   <main class="gate-main">
     <div class="gatebox">
-      <div class="brand big"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
+      <div class="brand"><span class="logo"><b></b><b></b><b></b><b></b></span>Tectune</div>
       <div>
         <h2>Olá, <span id="bsName"></span>!</h2>
         <p class="muted">Para começar, crie a sua banda ou entre numa banda que te convidou.</p>
@@ -209,8 +379,8 @@
       <div id="bsInvites" class="invites"></div>
       <form id="bsForm" class="stack">
         <label class="field"><span>Nome da banda</span><input name="name" maxlength="120" required placeholder="Ex.: Banda do Marcos"></label>
-        <button type="submit" class="primary big">Criar banda</button>
-        <small class="hint">Você será o admin e poderá convidar os músicos pelo e-mail.</small>
+        <button type="submit" class="accent big">Criar banda</button>
+        <small class="hint">Você será o admin. Depois é só mandar o link do show para a banda.</small>
       </form>
       <p class="switch"><button type="button" id="bsLogout" class="link">Sair da conta</button></p>
     </div>
@@ -227,14 +397,15 @@
   <h3>Membros</h3>
   <ul id="bandMembers" class="members"></ul>
   <div class="admin-only">
-    <h3>Convidar</h3>
+    <h3>Convidar para editar</h3>
+    <p class="muted small">Para só ver e tocar, mande o link do show. Convite por e-mail é para quem vai ter conta na banda.</p>
     <form id="inviteForm" class="row2">
       <input name="email" type="email" placeholder="E-mail do músico" required>
-      <button type="submit" class="primary">Convidar</button>
+      <button type="submit" class="accent">Convidar</button>
     </form>
     <ul id="bandInvites" class="members"></ul>
   </div>
-  <p class="muted"><b>Admins</b> editam músicas e setlists. <b>Membros</b> veem, tocam o Show e acompanham o ao vivo.</p>
+  <p class="muted small"><b>Admins</b> editam músicas e shows. <b>Membros</b> veem, tocam e acompanham o ao vivo.</p>
   <h3>Outra banda</h3>
   <form id="newBandForm" class="row2">
     <input name="name" maxlength="120" placeholder="Nome da nova banda" required>
@@ -245,7 +416,7 @@
     <button type="button" id="logoutBtn" class="ghost">Sair da conta</button>
     <button type="button" id="leaveBand" class="danger">Sair desta banda</button>
     <span class="spacer"></span>
-    <button type="button" class="primary" data-close>Fechar</button>
+    <button type="button" class="accent" data-close>Fechar</button>
   </div>
 </dialog>
 
@@ -254,28 +425,28 @@
   <p class="muted" id="exitText">O play é interrompido.</p>
   <div class="dlg-actions"><span class="spacer"></span>
     <button type="button" data-close>Continuar no show</button>
-    <button type="button" id="exitConfirm" class="primary">Sair</button>
+    <button type="button" id="exitConfirm" class="accent">Sair</button>
   </div>
 </dialog>
 
 <dialog id="dlgLive">
   <h2>Show ao vivo</h2>
-  <p class="muted">O diretor musical dá o play e todos que estão seguindo acompanham a música descendo, cada um na sua visão
-    (celular, tablet ou navegador). Todos precisam estar conectados a este servidor e com esta setlist.</p>
-  <label>Seu nome<input id="liveName" maxlength="40" placeholder="Ex.: Marcos (baixo)"></label>
+  <p class="muted">Quem conduz dá o play e todos que estão seguindo acompanham a música descendo, cada um na sua visão
+    (celular, tablet ou navegador), inclusive quem entrou pelo link do show.</p>
+  <label>Seu nome<input id="liveName" maxlength="40" placeholder="Ex.: Marcos (violão)"></label>
   <div class="liveopts" id="liveOpts">
-    <button type="button" data-role="diretor"><b>Sou o diretor</b><small>Meu play comanda a banda</small></button>
-    <button type="button" data-role="seguir"><b>Seguir o diretor</b><small>A música desce sozinha com o play do diretor</small></button>
+    <button type="button" data-role="diretor" class="not-guest"><b>Eu conduzo</b><small>Meu play comanda a banda</small></button>
+    <button type="button" data-role="seguir"><b>Seguir quem conduz</b><small>A música desce sozinha com o play de quem conduz</small></button>
     <button type="button" data-role="off"><b>Sozinho</b><small>Sem conexão com a banda</small></button>
   </div>
   <div id="liveMembers" class="livemembers"></div>
-  <div class="dlg-actions"><span class="spacer"></span><button type="button" class="primary" data-close>Pronto</button></div>
+  <div class="dlg-actions"><span class="spacer"></span><button type="button" class="accent" data-close>Pronto</button></div>
 </dialog>
 
 <dialog id="dlgSetlist">
   <form id="formSetlist" method="dialog">
-    <h2 id="dlgSetlistTitle">Nova setlist</h2>
-    <label>Nome do show<input name="name" required maxlength="200" placeholder="Ex.: Casamento Ana & Pedro"></label>
+    <h2 id="dlgSetlistTitle">Novo show</h2>
+    <label>Nome do show<input name="name" required maxlength="200" placeholder="Ex.: Casamento Ana &amp; Pedro"></label>
     <div class="two">
       <label>Data<input name="event_date" type="date"></label>
       <label>Compassos por linha<select name="cols"><option>4</option><option>6</option><option>8</option></select></label>
@@ -283,10 +454,25 @@
     <label>Local<input name="venue" maxlength="200" placeholder="Ex.: Espaço Villa"></label>
     <label>Observações<textarea name="notes" rows="3" maxlength="5000" placeholder="Horário, formação, passagem de som…"></textarea></label>
     <div class="dlg-actions">
-      <button type="button" id="slDelete" class="danger">Excluir setlist</button>
+      <button type="button" id="slDelete" class="danger">Excluir show</button>
       <span class="spacer"></span>
       <button type="button" data-close>Cancelar</button>
-      <button type="submit" class="primary">Salvar</button>
+      <button type="submit" class="accent">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgSection">
+  <form id="formSection" method="dialog">
+    <h2>Nova seção</h2>
+    <div class="secpicks" id="secPicks">
+      <button type="button">Intro</button><button type="button">Verso</button><button type="button">Pré-refrão</button>
+      <button type="button">Refrão</button><button type="button">Ponte</button><button type="button">Solo</button><button type="button">Final</button>
+    </div>
+    <label>Nome<input name="name" maxlength="60" required placeholder="Ex.: Refrão"></label>
+    <div class="dlg-actions"><span class="spacer"></span>
+      <button type="button" data-close>Cancelar</button>
+      <button type="submit" class="accent">Criar seção</button>
     </div>
   </form>
 </dialog>
@@ -309,12 +495,12 @@
     <a id="pdfOpen" class="btn ghost" target="_blank" rel="noopener">Abrir em nova aba</a>
     <a id="pdfDownload" class="btn">Baixar PDF</a>
     <button type="button" id="pdfPrint">Imprimir</button>
-    <button type="button" data-close class="primary">Fechar</button>
+    <button type="button" data-close class="accent">Fechar</button>
   </div>
   <div class="vbody">
     <aside id="coverPanel" class="cpanel" hidden>
       <h3>Folha do setlist</h3>
-      <p class="hint">Vale só para a lista de músicas e fica salvo neste setlist.</p>
+      <p class="hint">Vale só para a lista de músicas e fica salvo neste show.</p>
       <label class="cl">Visualização</label>
       <div class="segs" id="coverLayout">
         <button type="button" data-v="detalhada">Detalhada</button>
@@ -335,7 +521,7 @@
   </div>
 </dialog>
 
-<div id="toast"></div>
-<script type="module" src="js/app.js"></script>
+<div id="toast" role="status"></div>
+<script type="module" src="/js/app.js"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
-const { attachLive } = require('./live');
+const { attachLive, dropGuests } = require('./live');
 const { pool, waitForDb, migrate, tx } = require('./db');
 const { extractMeta } = require('./meta');
 const { EXAMPLE_SONG } = require('./seed');
@@ -83,7 +84,10 @@ function contentInput(body) {
   return body.content;
 }
 
-const SETLIST_COLS = `s.id, s.name, to_char(s.event_date, 'YYYY-MM-DD') AS event_date, s.venue, s.notes, s.cols, s.cover_scale, s.cover_layout, s.cover_opts, s.created_at, s.updated_at`;
+const SETLIST_COLS = `s.id, s.name, to_char(s.event_date, 'YYYY-MM-DD') AS event_date, s.venue, s.notes, s.cols, s.cover_scale, s.cover_layout, s.cover_opts, s.share_token, s.created_at, s.updated_at`;
+// link do show (só leitura, sem conta): 24 caracteres aleatórios, url-safe
+const SHARE_RE = /^[A-Za-z0-9_-]{20,64}$/;
+const newShareToken = () => crypto.randomBytes(18).toString('base64url');
 
 /* ---------- health ---------- */
 app.get('/api/health', wrap(async (req, res) => {
@@ -175,6 +179,28 @@ app.put('/api/setlists/:id/songs', wrap(async (req, res) => {
   res.json(await getSetlist(id, req.band));
 }));
 
+/* ---------- link do show (sem cadastro) ---------- */
+// cria o link (ou devolve o que já existe); { reset: true } troca por um novo e o antigo deixa de abrir
+app.post('/api/setlists/:id/share', wrap(async (req, res) => {
+  const id = checkId(req.params.id);
+  const reset = req.body?.reset === true;
+  const { rows } = await pool.query(
+    `UPDATE setlists SET share_token = CASE WHEN $3 OR share_token IS NULL THEN $4 ELSE share_token END,
+       share_created_at = CASE WHEN $3 OR share_token IS NULL THEN now() ELSE share_created_at END
+     WHERE id = $1 AND band_id = $2 RETURNING share_token`, [id, req.band, reset, newShareToken()]);
+  if (!rows.length) throw new HttpError(404, 'Setlist não encontrada');
+  if (reset) dropGuests(id);
+  res.json({ share_token: rows[0].share_token });
+}));
+// desliga o link: quem estava vendo pelo link sai do ao vivo
+app.delete('/api/setlists/:id/share', wrap(async (req, res) => {
+  const id = checkId(req.params.id);
+  const r = await pool.query('UPDATE setlists SET share_token = NULL, share_created_at = NULL WHERE id = $1 AND band_id = $2', [id, req.band]);
+  if (!r.rowCount) throw new HttpError(404, 'Setlist não encontrada');
+  dropGuests(id);
+  res.status(204).end();
+}));
+
 /* ---------- músicas (biblioteca) ---------- */
 app.get('/api/songs', wrap(async (req, res) => {
   const q = String(req.query.q || '').trim();
@@ -253,7 +279,29 @@ app.post('/api/sync', wrap(async (req, res) => {
   res.json(await runSync(pool, req.body, { band: req.band, canWrite: req.role === 'admin' }));
 }));
 
+/* ---------- show pelo link (público, só leitura) ---------- */
+app.get('/api/public/shows/:token', wrap(async (req, res) => {
+  const tok = String(req.params.token);
+  if (!SHARE_RE.test(tok)) throw new HttpError(404, 'Este link não existe ou foi desligado');
+  const { rows } = await pool.query(
+    `SELECT s.id, s.name, to_char(s.event_date, 'YYYY-MM-DD') AS event_date, s.venue, s.notes, s.cols, b.name AS band_name
+     FROM setlists s JOIN bands b ON b.id = s.band_id WHERE s.share_token = $1`, [tok]);
+  if (!rows.length) throw new HttpError(404, 'Este link não existe ou foi desligado');
+  const songs = await pool.query(`
+    SELECT so.id, so.title, so.artist, so.song_key, so.bpm, so.font_scale, so.content
+    FROM setlist_songs ss JOIN songs so ON so.id = ss.song_id
+    WHERE ss.setlist_id = $1 ORDER BY ss.position, ss.id`, [rows[0].id]);
+  res.set('Cache-Control', 'no-store');
+  res.json({ ...rows[0], songs: songs.rows });
+}));
+
 /* ---------- front-end ---------- */
+// link do show: a mesma página, que abre no modo convidado
+app.get('/s/:token', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.set('Referrer-Policy', 'no-referrer'); // o link não vaza para outros sites
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
 // núcleo compartilhado (packages/core) servido em /core
 const CORE_DIR = process.env.CORE_DIR || path.join(__dirname, '..', '..', '..', 'packages', 'core', 'src');
 // html/js/css revalidam sempre (ETag): cada deploy chega na hora, sem versões misturadas.

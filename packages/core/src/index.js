@@ -434,3 +434,4 @@ export function lyricEvents(song, timeline) {
   });
   return out;
 }
+export * from './edit.js';
