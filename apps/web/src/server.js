@@ -20,7 +20,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use('/api', cors());
 // freio contra abuso: geral na API e mais apertado em cadastro/login
 app.use('/api', rateLimit({ windowMs: 60_000, max: Number(process.env.RATE_LIMIT_PER_MIN) || 600 }));
-app.use(['/api/auth/register', '/api/auth/login'], rateLimit({ windowMs: 15 * 60_000, max: Number(process.env.AUTH_RATE_LIMIT) || 30, message: 'Muitas tentativas. Espere alguns minutos e tente de novo.' }));
+app.use(['/api/auth/register', '/api/auth/login', '/api/auth/forgot', '/api/auth/reset'], rateLimit({ windowMs: 15 * 60_000, max: Number(process.env.AUTH_RATE_LIMIT) || 30, message: 'Muitas tentativas. Espere alguns minutos e tente de novo.' }));
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_CONTENT = 100_000;

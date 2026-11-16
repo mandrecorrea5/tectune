@@ -1,10 +1,11 @@
 // Telas antes do repertório: entrar / criar conta, e criar a 1ª banda ou aceitar um convite.
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useData } from '../lib/store';
 import { Button } from './ui';
 import { C } from '../lib/theme';
+import { PROD_SERVER } from '../lib/server';
 
 function Shell({ children }) {
   return (
@@ -44,6 +45,12 @@ export function Login() {
       {mode === 'register' ? <Field label="Seu nome" testID="auth-name" value={f.name} onChangeText={v => setF({ ...f, name: v })} autoComplete="name" /> : null}
       <Field label="E-mail" testID="auth-email" value={f.email} onChangeText={v => setF({ ...f, email: v })} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
       <Field label="Senha" testID="auth-password" value={f.password} onChangeText={v => setF({ ...f, password: v })} secureTextEntry onSubmitEditing={submit} />
+      {mode === 'login' ? (
+        // a troca de senha acontece no site (o link chega por e-mail e abre lá)
+        <Pressable testID="auth-forgot" onPress={() => Linking.openURL(`${serverUrl || PROD_SERVER}/?esqueci`)}>
+          <Text style={st.forgot}>Esqueci minha senha</Text>
+        </Pressable>
+      ) : null}
       {err ? <Text style={st.err}>{err}</Text> : null}
       <Button testID="auth-submit" kind="primary" title={busy ? 'Aguarde…' : mode === 'register' ? 'Criar conta' : 'Entrar'} disabled={busy} onPress={submit} />
       <Pressable onPress={() => router.push('/settings')}><Text style={st.small}>Servidor: {serverUrl || 'procurar automaticamente'} · alterar</Text></Pressable>
@@ -100,6 +107,7 @@ function Field({ label, ...props }) {
 }
 
 const st = StyleSheet.create({
+  forgot: { textAlign: 'right', color: C.muted || '#78716C', fontSize: 13, fontWeight: '600', marginTop: -4 },
   wrap: { flexGrow: 1, justifyContent: 'center', padding: 18 },
   box: { backgroundColor: '#fff', borderRadius: 16, padding: 20, gap: 12, borderWidth: 1, borderColor: C.line, maxWidth: 440, width: '100%', alignSelf: 'center' },
   brand: { fontSize: 22, fontWeight: '900', color: C.ink, textAlign: 'center', marginBottom: 4 },

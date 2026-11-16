@@ -29,7 +29,7 @@ export default function BandScreen() {
 
   const run = async (fn, ok) => {
     setMsg(null);
-    try { const r = await fn(); if (r && r.members) setInfo(r); if (ok) setMsg({ t: ok }); }
+    try { const r = await fn(); if (r && r.members) setInfo(r); if (r?.message || ok) setMsg({ t: r?.message || ok }); }
     catch (e) { setMsg({ err: true, t: e.message }); }
   };
   const answer = (inv, accept) => run(() => bandApi((a, url) => a.answerInvite(url, inv.id, accept), accept ? inv.band_id : undefined), accept ? 'Você entrou na banda' : null);
@@ -80,8 +80,8 @@ export default function BandScreen() {
           <>
             <Text style={st.label}>Convidar (quem já tem conta)</Text>
             <View style={st.row}>
-              <TextInput testID="invite-email" value={email} onChangeText={setEmail} placeholder="E-mail" keyboardType="email-address" autoCapitalize="none" style={[st.input, { flex: 1 }]} />
-              <Button testID="invite-send" small kind="primary" title="Convidar" onPress={() => run(async () => { const r = await api.invite(serverUrl, account.bandId, email.trim()); setEmail(''); return r; }, 'Convite enviado — a pessoa vê ao entrar no app')} />
+              <TextInput testID="invite-email" value={email} onChangeText={setEmail} placeholder="E-mail do músico" keyboardType="email-address" autoCapitalize="none" style={[st.input, { flex: 1 }]} />
+              <Button testID="invite-send" small kind="primary" title="Convidar" onPress={() => run(async () => { const r = await api.invite(serverUrl, account.bandId, email.trim()); setEmail(''); return r; }, 'Convite enviado')} />
             </View>
             {(info?.invites || []).map(i => (
               <View key={i.id} style={st.member}>

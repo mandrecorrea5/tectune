@@ -719,25 +719,34 @@ $('btnPdfSetlist').onclick = () => {
 };
 
 /* ---------------- contas e bandas ---------------- */
-let authMode = 'login';
+let authMode = 'login', resetToken = null, canReset = false;
+const AUTH_TEXT = {
+  login:    { title: 'Entrar', sub: 'Bem-vindo de volta! Entre para ver o repertório da sua banda.', btn: 'Entrar', busy: 'Entrando…', sw: ['Ainda não tem conta?', 'Criar conta'] },
+  register: { title: 'Criar conta', sub: 'Leva menos de um minuto. Depois é só criar a banda ou aceitar um convite.', btn: 'Criar conta', busy: 'Criando conta…', sw: ['Já tem conta?', 'Entrar'] },
+  forgot:   { title: 'Esqueci minha senha', sub: 'Informe o e-mail da sua conta e enviamos um link para criar uma senha nova.', btn: 'Enviar link', busy: 'Enviando…', sw: ['Lembrou a senha?', 'Entrar'] },
+  reset:    { title: 'Criar nova senha', sub: 'Escolha a senha nova. Depois disso você já entra na sua conta.', btn: 'Salvar senha e entrar', busy: 'Salvando…', sw: ['Não precisa mais?', 'Entrar'] },
+};
 function showAuth() {
   $('bandScreen').hidden = true; $('authScreen').hidden = false; $('authErr').hidden = true;
   $('authForm').password.value = '';
   setTimeout(() => setAuthMode(authMode), 0);
 }
 function setAuthMode(m) {
-  authMode = m; const reg = m === 'register';
-  $('authNameL').hidden = !reg; $('pwHint').hidden = !reg; $('authErr').hidden = true;
-  $('authTitle').textContent = reg ? 'Criar conta' : 'Entrar';
-  $('authSub').textContent = reg ? 'Leva menos de um minuto. Depois é só criar a banda ou aceitar um convite.' : 'Bem-vindo de volta! Entre para ver o repertório da sua banda.';
-  $('authSubmit').textContent = reg ? 'Criar conta' : 'Entrar';
-  $('authSwitchText').textContent = reg ? 'Já tem conta?' : 'Ainda não tem conta?';
-  $('authSwitch').textContent = reg ? 'Entrar' : 'Criar conta';
-  $('authForm').password.autocomplete = reg ? 'new-password' : 'current-password';
-  $('authForm').password.placeholder = reg ? 'Crie uma senha' : 'Sua senha';
-  $('authForm')[reg ? 'name' : 'email'].focus();
+  authMode = m; const reg = m === 'register', t = AUTH_TEXT[m];
+  $('authNameL').hidden = !reg; $('pwHint').hidden = !(reg || m === 'reset');
+  $('authEmailL').hidden = m === 'reset'; $('authPwL').hidden = m === 'forgot';
+  $('forgotRow').hidden = !(m === 'login' && canReset);
+  $('authErr').hidden = true; $('authOk').hidden = true;
+  $('authTitle').textContent = t.title; $('authSub').textContent = t.sub; $('authSubmit').textContent = t.btn;
+  $('authSwitchText').textContent = t.sw[0]; $('authSwitch').textContent = t.sw[1];
+  $('authPwLabel').textContent = m === 'reset' ? 'Senha nova' : 'Senha';
+  const pw = $('authForm').password;
+  pw.autocomplete = reg || m === 'reset' ? 'new-password' : 'current-password';
+  pw.placeholder = reg ? 'Crie uma senha' : m === 'reset' ? 'Pelo menos 6 caracteres' : 'Sua senha';
+  $('authForm')[reg ? 'name' : m === 'reset' ? 'password' : 'email'].focus();
 }
 $('authSwitch').onclick = () => setAuthMode(authMode === 'login' ? 'register' : 'login');
+$('forgotLink').onclick = () => setAuthMode('forgot');
 $('pwToggle').onclick = () => {
   const i = $('authForm').password, show = i.type === 'password';
   i.type = show ? 'text' : 'password'; $('pwToggle').textContent = show ? 'Ocultar' : 'Mostrar';
@@ -745,28 +754,49 @@ $('pwToggle').onclick = () => {
 };
 $('authForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const f = e.target; const err = $('authErr'); err.hidden = true;
-  const reg = authMode === 'register';
+  const f = e.target; const err = $('authErr'); err.hidden = true; $('authOk').hidden = true;
+  const m = authMode, reg = m === 'register', newPw = reg || m === 'reset';
   // validação rápida antes de ir ao servidor
   const bad = (reg && !f.name.value.trim() && 'Informe seu nome')
-    || (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.value.trim()) && 'Informe um e-mail válido')
-    || (f.password.value.length < (reg ? 6 : 1) && (reg ? 'A senha precisa ter pelo menos 6 caracteres' : 'Informe a senha'));
+    || (m !== 'reset' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.value.trim()) && 'Informe um e-mail válido')
+    || (m !== 'forgot' && f.password.value.length < (newPw ? 6 : 1) && (newPw ? 'A senha precisa ter pelo menos 6 caracteres' : 'Informe a senha'));
   [f.name, f.email, f.password].forEach(i => i.removeAttribute('aria-invalid'));
   if (bad) {
     err.textContent = bad; err.hidden = false;
     const field = bad.includes('nome') ? f.name : bad.includes('mail') ? f.email : f.password;
     field.setAttribute('aria-invalid', 'true'); field.focus(); return;
   }
-  const body = { email: f.email.value.trim(), password: f.password.value, ...(reg ? { name: f.name.value.trim() } : {}) };
   const btn = $('authSubmit'), label = btn.textContent;
-  btn.disabled = true; btn.textContent = reg ? 'Criando conta…' : 'Entrando…';
+  btn.disabled = true; btn.textContent = AUTH_TEXT[m].busy;
   try {
-    const r = await api('POST', reg ? '/auth/register' : '/auth/login', body);
+    if (m === 'forgot') {
+      const r = await api('POST', '/auth/forgot', { email: f.email.value.trim() });
+      $('authOk').textContent = 'Pronto! Se existir uma conta com esse e-mail, o link para criar a senha nova chega em instantes. Confira também o spam.';
+      $('authOk').hidden = false;
+      if (r.devLink) console.info('[dev] link de redefinição:', r.devLink);
+      return;
+    }
+    const r = m === 'reset'
+      ? await api('POST', '/auth/reset', { token: resetToken, password: f.password.value })
+      : await api('POST', reg ? '/auth/register' : '/auth/login', { email: f.email.value.trim(), password: f.password.value, ...(reg ? { name: f.name.value.trim() } : {}) });
+    if (m === 'reset') { resetToken = null; authMode = 'login'; toast('Senha alterada. Bem-vindo de volta!'); }
     setToken(r.token); $('authScreen').hidden = true; f.reset();
     await start();
   } catch (ex) { err.textContent = ex.message; err.hidden = false; }
   finally { btn.disabled = false; btn.textContent = label; }
 });
+
+// links que chegam por e-mail: ?redefinir=<token> (senha nova) e ?cadastro=<email> (convite)
+(function linksDoEmail() {
+  const q = new URLSearchParams(location.search);
+  const r = q.get('redefinir'), c = q.get('cadastro'), f = q.has('esqueci');
+  if (r) { resetToken = r; authMode = 'reset'; setToken(null); }
+  else if (c && !token) { authMode = 'register'; $('authForm').email.value = c; }
+  else if (f && !token) authMode = 'forgot';
+  if (r || c || f) history.replaceState(null, '', location.pathname);
+})();
+api('GET', '/auth/options').then(o => { canReset = !!o.passwordReset; if (authMode === 'login' && !$('authScreen').hidden) $('forgotRow').hidden = !canReset; }).catch(() => {});
+
 async function logout() {
   try { await api('POST', '/auth/logout'); } catch (e) { /* já saiu */ }
   setToken(null); me = null; live.set({ role: 'off' }); $('dlgBand').close();
@@ -847,7 +877,7 @@ $('bandNameForm').addEventListener('submit', async e => {
 });
 $('inviteForm').addEventListener('submit', async e => {
   e.preventDefault();
-  try { bandInfo = await api('POST', `/bands/${bandId}/invites`, { email: e.target.email.value.trim() }); e.target.reset(); renderBandDialog(); toast('Convite enviado — a pessoa vê ao entrar'); }
+  try { bandInfo = await api('POST', `/bands/${bandId}/invites`, { email: e.target.email.value.trim() }); e.target.reset(); renderBandDialog(); toast(bandInfo.message || 'Convite enviado', 4500); }
   catch (ex) { toast(ex.message, 4500); }
 });
 $('bandMembers').addEventListener('click', async e => {

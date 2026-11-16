@@ -388,6 +388,9 @@ body.following .bar,body.following .ly{cursor:default}
 .hint[hidden]{display:none}
 .gateerr{margin:0;padding:10px 12px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-weight:600;font-size:14px}
 .gateerr[hidden]{display:none}
+.gateok{margin:0;padding:10px 12px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-weight:600;font-size:14px;line-height:1.45}
+.gateok[hidden],.forgot[hidden]{display:none}
+.forgot{margin:-6px 0 0;text-align:right;font-size:13px}
 button.big{height:48px;font-size:15.5px;border-radius:11px}
 button.big:disabled{opacity:.6}
 .switch{margin:0;text-align:center;font-size:14px;color:var(--muted)}

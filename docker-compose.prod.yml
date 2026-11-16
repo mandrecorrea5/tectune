@@ -53,6 +53,11 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
       SESSION_DAYS: ${SESSION_DAYS:-90}
       TZ: ${TZ:-America/Fortaleza}
+      # e-mail transacional (Resend): recuperação de senha e convites
+      APP_URL: ${APP_URL:-https://tectune.com.br}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Tectune}
     networks: [internal, ingress]
     deploy:
       resources:

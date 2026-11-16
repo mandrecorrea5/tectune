@@ -48,8 +48,11 @@ test('contas, bandas e permissões', async t => {
     assert.equal((await call('GET', '/songs', null, { token: B, band })).status, 403);
   });
 
-  await t.test('convite só para quem tem conta; aceitar entra como membro', async () => {
-    assert.equal((await call('POST', `/bands/${band}/invites`, { email: `ninguem-${tag}@teste.dev` }, { token: A })).status, 404);
+  await t.test('convite por e-mail; aceitar entra como membro', async () => {
+    // quem ainda não tem conta recebe e-mail (simulado em dev) e fica como convite pendente
+    const ghost = await call('POST', `/bands/${band}/invites`, { email: `ninguem-${tag}@teste.dev` }, { token: A });
+    assert.equal(ghost.status, 201); assert.equal(ghost.body.invites.length, 1);
+    await call('DELETE', `/bands/${band}/invites/${ghost.body.invites[0].id}`, null, { token: A });
     assert.equal((await call('POST', `/bands/${band}/invites`, { email: beto.email }, { token: B })).status, 403);
     const inv = await call('POST', `/bands/${band}/invites`, { email: beto.email }, { token: A });
     assert.equal(inv.status, 201); assert.equal(inv.body.invites.length, 1);

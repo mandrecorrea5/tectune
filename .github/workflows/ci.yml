@@ -44,6 +44,7 @@ jobs:
         env:
           DATABASE_URL: postgres://cifras:cifras@localhost:5432/cifras
           BASE_URL: http://localhost:3000
+          AUTH_RATE_LIMIT: 1000
         run: |
           node src/server.js > /tmp/api.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS localhost:3000/api/health && break; sleep 1; done

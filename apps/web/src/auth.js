@@ -6,6 +6,7 @@
 const crypto = require('crypto');
 const { promisify } = require('util');
 const scrypt = promisify(crypto.scrypt);
+const mail = require('./email');
 
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -85,6 +86,10 @@ function mount(app, { pool, tx, wrap }) {
     if (exists.rowCount) throw new HttpError(409, 'Já existe uma conta com esse e-mail');
     const { rows } = await pool.query('INSERT INTO users (email, name, pass_hash) VALUES ($1, $2, $3) RETURNING id, name, email',
       [email, name, await hashPassword(pw)]);
+    // convites feitos por e-mail antes de a pessoa ter conta viram convites normais
+    await pool.query(`WITH moved AS (DELETE FROM band_email_invites WHERE lower(email) = $1 RETURNING band_id, invited_by)
+      INSERT INTO band_invites (band_id, user_id, invited_by) SELECT band_id, $2, invited_by FROM moved
+      ON CONFLICT (band_id, user_id) DO NOTHING`, [email, rows[0].id]);
     res.status(201).json({ token: await newSession(rows[0].id), user: publicUser(rows[0]) });
   }));
 
@@ -98,6 +103,53 @@ function mount(app, { pool, tx, wrap }) {
     }
     fails.delete(key);
     res.json({ token: await newSession(rows[0].id), user: publicUser(rows[0]) });
+  }));
+
+  /* ---------- esqueci minha senha (por e-mail) ---------- */
+  // o que a tela de login pode oferecer
+  app.get('/api/auth/options', (req, res) => res.json({ passwordReset: mail.available() }));
+
+  app.post('/api/auth/forgot', wrap(async (req, res) => {
+    if (!mail.available()) throw new HttpError(503, 'A recuperação de senha por e-mail não está disponível. Fale com o admin da sua banda.');
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!EMAIL.test(email)) throw new HttpError(400, 'E-mail inválido');
+    const { rows } = await pool.query('SELECT id, name, email FROM users WHERE lower(email) = $1', [email]);
+    const out = { ok: true };
+    // mesma resposta exista ou não a conta (não revela quem tem cadastro)
+    if (rows.length) {
+      const recent = await pool.query(`SELECT count(*)::int AS n FROM password_resets WHERE user_id = $1 AND created_at > now() - interval '15 minutes'`, [rows[0].id]);
+      if (recent.rows[0].n < 3) {
+        const token = crypto.randomBytes(32).toString('base64url');
+        await pool.query(`INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES ($1, $2, now() + interval '1 hour')`, [sha(token), rows[0].id]);
+        const link = `${mail.appUrl()}/?redefinir=${token}`;
+        try {
+          const r = await mail.passwordReset({ to: rows[0].email, name: rows[0].name, link });
+          if (r?.simulated) out.devLink = link; // só em desenvolvimento sem Resend (testes)
+        } catch (err) {
+          console.error('[email] recuperação de senha falhou:', err.message);
+          throw new HttpError(502, 'Não conseguimos enviar o e-mail agora. Tente de novo em alguns minutos.');
+        }
+      }
+    }
+    res.json(out);
+  }));
+
+  app.post('/api/auth/reset', wrap(async (req, res) => {
+    const token = String(req.body.token || '');
+    const pw = String(req.body.password || '');
+    if (pw.length < 6) throw new HttpError(400, 'A senha precisa ter pelo menos 6 caracteres');
+    if (!token || token.length > 100) throw new HttpError(400, 'Link inválido');
+    const user = await tx(async c => {
+      const { rows } = await c.query(`UPDATE password_resets SET used_at = now()
+        WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now() RETURNING user_id`, [sha(token)]);
+      if (!rows.length) throw new HttpError(400, 'Este link expirou ou já foi usado. Peça um novo em "Esqueci minha senha".');
+      const u = await c.query('UPDATE users SET pass_hash = $2 WHERE id = $1 RETURNING id, name, email', [rows[0].user_id, await hashPassword(pw)]);
+      // troca de senha desconecta todos os aparelhos e invalida outros links pendentes
+      await c.query('DELETE FROM sessions WHERE user_id = $1', [rows[0].user_id]);
+      await c.query('DELETE FROM password_resets WHERE user_id = $1 AND used_at IS NULL', [rows[0].user_id]);
+      return u.rows[0];
+    });
+    res.json({ token: await newSession(user.id), user: publicUser(user) });
   }));
 
   app.post('/api/auth/logout', requireUser, wrap(async (req, res) => {
@@ -152,8 +204,11 @@ function mount(app, { pool, tx, wrap }) {
       pool.query('SELECT id, name FROM bands WHERE id = $1', [id]),
       pool.query(`SELECT u.id, u.name, u.email, m.role FROM band_members m JOIN users u ON u.id = m.user_id
                    WHERE m.band_id = $1 ORDER BY m.role, lower(u.name)`, [id]),
-      pool.query(`SELECT i.id, u.name, u.email FROM band_invites i JOIN users u ON u.id = i.user_id
-                   WHERE i.band_id = $1 ORDER BY i.created_at`, [id]),
+      pool.query(`SELECT id, name, email FROM (
+                     SELECT i.id, u.name, u.email, i.created_at FROM band_invites i JOIN users u ON u.id = i.user_id WHERE i.band_id = $1
+                     UNION ALL
+                     SELECT e.id, 'Ainda sem conta' AS name, e.email, e.created_at FROM band_email_invites e WHERE e.band_id = $1
+                   ) x ORDER BY created_at`, [id]),
     ]);
     return { ...b.rows[0], members: members.rows, invites: invites.rows };
   }
@@ -166,21 +221,46 @@ function mount(app, { pool, tx, wrap }) {
     res.json({ ...(await bandInfo(req.band)), role: req.role });
   }));
 
-  // convidar alguém que já tem conta (pelo e-mail)
+  // convidar pelo e-mail: quem já tem conta recebe o convite no app (e por e-mail);
+  // quem ainda não tem recebe um e-mail para se cadastrar, e o convite espera por ela
   app.post('/api/bands/:id/invites', requireUser, bandParam, adminOnly, wrap(async (req, res) => {
-    const email = String(req.body.email || '').trim().toLowerCase();
+    const email = String(req.body.email || '').trim().toLowerCase().slice(0, 200);
+    if (!EMAIL.test(email)) throw new HttpError(400, 'E-mail inválido');
+    const band = (await pool.query('SELECT name FROM bands WHERE id = $1', [req.band])).rows[0];
     const u = await pool.query('SELECT id, name FROM users WHERE lower(email) = $1', [email]);
-    if (!u.rowCount) throw new HttpError(404, 'Não há conta com esse e-mail. Peça para a pessoa se cadastrar primeiro.');
-    const uid = u.rows[0].id;
-    const member = await pool.query('SELECT 1 FROM band_members WHERE band_id = $1 AND user_id = $2', [req.band, uid]);
-    if (member.rowCount) throw new HttpError(409, `${u.rows[0].name} já faz parte da banda`);
-    await pool.query(`INSERT INTO band_invites (band_id, user_id, invited_by) VALUES ($1, $2, $3)
-                      ON CONFLICT (band_id, user_id) DO NOTHING`, [req.band, uid, req.user.id]);
-    res.status(201).json({ ...(await bandInfo(req.band)), role: req.role });
+    let message;
+    if (u.rowCount) {
+      const uid = u.rows[0].id;
+      const member = await pool.query('SELECT 1 FROM band_members WHERE band_id = $1 AND user_id = $2', [req.band, uid]);
+      if (member.rowCount) throw new HttpError(409, `${u.rows[0].name} já faz parte da banda`);
+      const ins = await pool.query(`INSERT INTO band_invites (band_id, user_id, invited_by) VALUES ($1, $2, $3)
+                        ON CONFLICT (band_id, user_id) DO NOTHING`, [req.band, uid, req.user.id]);
+      message = 'Convite enviado: a pessoa vê ao entrar no Tectune';
+      if (ins.rowCount && mail.configured()) {
+        mail.bandInvite({ to: email, band: band.name, by: req.user.name, hasAccount: true })
+          .catch(err => console.error('[email] convite falhou:', err.message));
+        message = 'Convite enviado: a pessoa recebeu um e-mail e vê o convite ao entrar';
+      }
+    } else {
+      if (!mail.available()) throw new HttpError(404, 'Não há conta com esse e-mail. Peça para a pessoa se cadastrar primeiro.');
+      const ins = await pool.query(`INSERT INTO band_email_invites (band_id, email, invited_by) VALUES ($1, $2, $3)
+                        ON CONFLICT (band_id, lower(email)) DO NOTHING`, [req.band, email, req.user.id]);
+      if (ins.rowCount) {
+        try { await mail.bandInvite({ to: email, band: band.name, by: req.user.name, hasAccount: false }); }
+        catch (err) {
+          await pool.query('DELETE FROM band_email_invites WHERE band_id = $1 AND lower(email) = $2', [req.band, email]);
+          console.error('[email] convite falhou:', err.message);
+          throw new HttpError(502, 'Não conseguimos enviar o e-mail de convite agora. Tente de novo em alguns minutos.');
+        }
+      }
+      message = 'Essa pessoa ainda não tem conta: mandamos um e-mail para ela se cadastrar';
+    }
+    res.status(201).json({ ...(await bandInfo(req.band)), role: req.role, message });
   }));
   app.delete('/api/bands/:id/invites/:inv', requireUser, bandParam, adminOnly, wrap(async (req, res) => {
     if (!UUID.test(req.params.inv)) throw new HttpError(404, 'Convite não encontrado');
     await pool.query('DELETE FROM band_invites WHERE id = $1 AND band_id = $2', [req.params.inv, req.band]);
+    await pool.query('DELETE FROM band_email_invites WHERE id = $1 AND band_id = $2', [req.params.inv, req.band]);
     res.json({ ...(await bandInfo(req.band)), role: req.role });
   }));
 
@@ -239,8 +319,9 @@ function startCleanup(pool) {
   const run = () => pool.query('DELETE FROM sessions WHERE last_used_at < now() - make_interval(days => $1)', [SESSION_DAYS])
     .then(r => { if (r.rowCount) console.log(`[auth] ${r.rowCount} sessões expiradas removidas`); })
     .catch(err => console.error('[auth] limpeza de sessões falhou:', err.message));
-  run();
-  setInterval(run, 24 * 3600 * 1000).unref();
+  const resets = () => pool.query(`DELETE FROM password_resets WHERE expires_at < now() - interval '1 day'`).catch(() => {});
+  run(); resets();
+  setInterval(() => { run(); resets(); }, 24 * 3600 * 1000).unref();
 }
 
 module.exports = { mount, hashPassword, checkPassword, startCleanup };

@@ -158,13 +158,15 @@
       </div>
       <label class="field" id="authNameL" hidden><span>Seu nome</span>
         <input name="name" maxlength="80" autocomplete="name" placeholder="Como a banda te chama"></label>
-      <label class="field"><span>E-mail</span>
+      <label class="field" id="authEmailL"><span>E-mail</span>
         <input name="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required></label>
-      <label class="field"><span>Senha</span>
+      <label class="field" id="authPwL"><span id="authPwLabel">Senha</span>
         <span class="pw"><input name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="Sua senha">
           <button type="button" id="pwToggle" class="pwtoggle" aria-label="Mostrar senha">Mostrar</button></span>
         <small id="pwHint" class="hint" hidden>Pelo menos 6 caracteres.</small></label>
+      <p class="forgot" id="forgotRow" hidden><button type="button" id="forgotLink" class="link">Esqueci minha senha</button></p>
       <p id="authErr" class="gateerr" role="alert" hidden></p>
+      <p id="authOk" class="gateok" role="status" hidden></p>
       <button type="submit" class="primary big" id="authSubmit">Entrar</button>
       <p class="switch"><span id="authSwitchText">Ainda não tem conta?</span> <button type="button" id="authSwitch" class="link">Criar conta</button></p>
     </form>
@@ -184,7 +186,7 @@
       <form id="bsForm" class="stack">
         <label class="field"><span>Nome da banda</span><input name="name" maxlength="120" required placeholder="Ex.: Banda do Marcos"></label>
         <button type="submit" class="primary big">Criar banda</button>
-        <small class="hint">Você será o admin e poderá convidar os músicos que já têm conta.</small>
+        <small class="hint">Você será o admin e poderá convidar os músicos pelo e-mail.</small>
       </form>
       <p class="switch"><button type="button" id="bsLogout" class="link">Sair da conta</button></p>
     </div>
@@ -203,7 +205,7 @@
   <div class="admin-only">
     <h3>Convidar</h3>
     <form id="inviteForm" class="row2">
-      <input name="email" type="email" placeholder="E-mail de quem já tem conta" required>
+      <input name="email" type="email" placeholder="E-mail do músico" required>
       <button type="submit" class="primary">Convidar</button>
     </form>
     <ul id="bandInvites" class="members"></ul>

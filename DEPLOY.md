@@ -89,7 +89,39 @@ curl -sI https://tectune.com.br | head -1      # HTTP/2 200
 
 Sem `VPS_SSH_KEY` o job de deploy só avisa e é pulado. Re-publicar sem commit novo: **Actions → CI → Run workflow**.
 
-## 4. Dia a dia (na VPS, em /srv/apps/tectune)
+## 4. E-mail (Resend), igual ao felpma
+
+O Tectune manda dois e-mails: **recuperação de senha** ("Esqueci minha senha" na tela de login, link válido por 1 hora,
+uso único) e **convite de banda** (para quem já tem conta e também para quem ainda não tem: a pessoa recebe o
+link de cadastro e o convite fica esperando por ela). Sem o Resend configurado, o "Esqueci minha senha" não aparece
+e convites só funcionam para quem já tem conta.
+
+1. **Resend → Domains → Add domain**: `tectune.com.br` (região: São Paulo, `sa-east-1`, se aparecer a opção).
+2. O Resend mostra 3 ou 4 registros DNS. Crie **exatamente** esses na Cloudflare (**DNS → Records**), todos *DNS only*:
+   | Tipo | Nome | Conteúdo (copie do Resend) |
+   |---|---|---|
+   | MX | `send` | `feedback-smtp.<região>.amazonses.com`, prioridade 10 |
+   | TXT | `send` | `v=spf1 include:amazonses.com ~all` |
+   | TXT | `resend._domainkey` | `p=MIGfMA0G...` (a chave DKIM) |
+   | TXT | `_dmarc` (recomendado) | `v=DMARC1; p=none;` |
+
+   Não mexa em MX do domínio raiz: o `send` é um subdomínio só para os envios.
+3. No Resend, clique em **Verify DNS Records** e espere ficar **Verified** (minutos, às vezes até 1 hora).
+4. **Resend → API Keys → Create API Key**: nome `tectune-producao`, permissão **Sending access**, domínio `tectune.com.br`.
+   Copie a chave (`re_...`, só aparece uma vez).
+5. Na VPS, edite o `.env` e suba de novo:
+   ```bash
+   cd /srv/apps/tectune && nano .env
+   # RESEND_API_KEY=re_...
+   # EMAIL_FROM_ADDRESS=nao-responda@tectune.com.br
+   # EMAIL_FROM_NAME=Tectune
+   # APP_URL=https://tectune.com.br
+   docker compose -f docker-compose.prod.yml up -d app
+   ```
+6. Teste: em https://tectune.com.br clique em **Esqueci minha senha** com o seu e-mail. Erros de envio aparecem em
+   `docker compose -f docker-compose.prod.yml logs app | grep email`.
+
+## 5. Dia a dia (na VPS, em /srv/apps/tectune)
 
 ```bash
 C="docker compose -f docker-compose.prod.yml"
@@ -111,7 +143,7 @@ bash scripts/backup.sh restaurar backups/tectune_AAAA-MM-DD_HHMM.dump
 Os backups ficam na própria VPS: copie para fora de vez em quando (`rsync -av root@187.41.102.127:/srv/apps/tectune/backups/ ~/Backups/tectune/`)
 ou siga o mesmo caminho de backup offsite do elama.
 
-## 5. App mobile
+## 6. App mobile
 
 Builds de produção já apontam para `https://tectune.com.br` (`apps/mobile/app.json` → `extra.apiUrl`; `eas.json`).
 
