@@ -13,10 +13,33 @@ async function call(method, path, body, token, band) {
   return { status: r.status, data };
 }
 
+async function registered(name, email, password) {
+  const r = await call('POST', '/auth/register', { name, email, password });
+  assert.equal(r.status, 201);
+  const v = await call('POST', '/auth/verify', { token: new URL(r.data.devLink).searchParams.get('confirmar') });
+  assert.equal(v.status, 200);
+  return { status: 201, data: v.data };
+}
+
+test('confirmação de e-mail: reenviar link, link antigo continua valendo até usar', async () => {
+  const email = `conf-${tag}@t.dev`;
+  const r = await call('POST', '/auth/register', { name: 'Caio', email, password: 'segredo1' });
+  assert.equal(r.status, 201);
+  const again = await call('POST', '/auth/register', { name: 'Caio', email, password: 'segredo1' });
+  assert.equal(again.status, 409); assert.equal(again.data.code, 'unverified');
+  const re = await call('POST', '/auth/resend', { email });
+  assert.equal(re.status, 200); assert.ok(re.data.devLink);
+  const v = await call('POST', '/auth/verify', { token: new URL(re.data.devLink).searchParams.get('confirmar') });
+  assert.equal(v.status, 200); assert.ok(v.data.token);
+  // depois de confirmado, os outros links deixam de valer e o reenvio não manda nada
+  assert.equal((await call('POST', '/auth/verify', { token: new URL(r.data.devLink).searchParams.get('confirmar') })).status, 400);
+  assert.equal((await call('POST', '/auth/resend', { email })).data.devLink, undefined);
+  assert.equal((await call('POST', '/auth/login', { email, password: 'segredo1' })).status, 200);
+});
+
 test('esqueci minha senha: link único, troca a senha e desconecta os aparelhos', async () => {
   const email = `reset-${tag}@t.dev`;
-  const reg = await call('POST', '/auth/register', { name: 'Ana', email, password: 'antiga1' });
-  assert.equal(reg.status, 201);
+  const reg = await registered('Ana', email, 'antiga1');
   assert.equal((await call('GET', '/auth/options')).data.passwordReset, true);
 
   // e-mail inexistente: mesma resposta, sem link
@@ -39,7 +62,7 @@ test('esqueci minha senha: link único, troca a senha e desconecta os aparelhos'
 });
 
 test('convite por e-mail para quem ainda não tem conta vira convite ao se cadastrar', async () => {
-  const admin = await call('POST', '/auth/register', { name: 'Diretor', email: `dir-${tag}@t.dev`, password: 'segredo1' });
+  const admin = await registered('Diretor', `dir-${tag}@t.dev`, 'segredo1');
   const band = await call('POST', '/bands', { name: `Banda ${tag}` }, admin.data.token);
   assert.equal(band.status, 201);
   const guest = `novo-${tag}@t.dev`;
@@ -48,7 +71,7 @@ test('convite por e-mail para quem ainda não tem conta vira convite ao se cadas
   assert.match(inv.data.message, /ainda não tem conta/);
   assert.ok(inv.data.invites.some(i => i.email === guest));
 
-  const u = await call('POST', '/auth/register', { name: 'Novo', email: guest, password: 'segredo1' });
+  const u = await registered('Novo', guest, 'segredo1');
   const me = await call('GET', '/me', null, u.data.token);
   const pending = me.data.invites.find(i => i.band_id === band.data.id);
   assert.ok(pending, 'convite apareceu para a conta nova');

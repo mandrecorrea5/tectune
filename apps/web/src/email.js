@@ -68,6 +68,19 @@ function passwordReset({ to, name, link }) {
   });
 }
 
+function confirmEmail({ to, name, link }) {
+  return send({
+    to, subject: 'Confirme seu e-mail no Tectune',
+    html: layout({
+      title: 'Confirme seu e-mail',
+      lines: [`Oi, ${esc(name)}! Que bom ter você no Tectune.`, 'Falta só um passo: confirme que este e-mail é seu para ativar a conta. O link vale por <b>24 horas</b>.'],
+      button: { href: link, label: 'Confirmar meu e-mail' },
+      footer: 'Se você não criou uma conta no Tectune, ignore este e-mail: nenhuma conta será ativada.',
+    }),
+    text: `Oi, ${name}!\n\nConfirme seu e-mail para ativar a conta no Tectune (vale 24 horas):\n${link}\n\nSe não foi você, ignore este e-mail.`,
+  });
+}
+
 function bandInvite({ to, band, by, hasAccount }) {
   const link = hasAccount ? appUrl() : `${appUrl()}/?cadastro=${encodeURIComponent(to)}`;
   const action = hasAccount ? 'Entre no Tectune para aceitar o convite.' : 'Crie sua conta com este e-mail e o convite já vai estar lá esperando.';
@@ -82,4 +95,4 @@ function bandInvite({ to, band, by, hasAccount }) {
   });
 }
 
-module.exports = { configured, available, appUrl, send, passwordReset, bandInvite };
+module.exports = { configured, available, appUrl, send, passwordReset, confirmEmail, bandInvite };

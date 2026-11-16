@@ -13,6 +13,12 @@ const call = async (method, path, body, { token, band } = {}) => {
   return { status: r.status, body: r.status === 204 ? null : await r.json() };
 };
 
+// cadastro → confirmação pelo link do e-mail (em dev o link volta na resposta) → token
+const confirm = async reg => {
+  const t = new URL(reg.body.devLink).searchParams.get('confirmar');
+  return (await call('POST', '/auth/verify', { token: t })).body.token;
+};
+
 test('contas, bandas e permissões', async t => {
   const tag = randomUUID().slice(0, 8);
   const ana = { email: `ana-${tag}@teste.dev`, password: 'senha-ana-1' };
@@ -25,10 +31,15 @@ test('contas, bandas e permissões', async t => {
 
   await t.test('cadastro, e-mail repetido e senha curta', async () => {
     const r = await call('POST', '/auth/register', { name: 'Ana', ...ana });
-    assert.equal(r.status, 201); A = r.body.token;
+    assert.equal(r.status, 201); assert.equal(r.body.pending, true); assert.equal(r.body.token, undefined);
+    // antes de confirmar: não entra
+    const blocked = await call('POST', '/auth/login', ana);
+    assert.equal(blocked.status, 403); assert.equal(blocked.body.code, 'unverified');
     assert.equal((await call('POST', '/auth/register', { name: 'Ana 2', ...ana })).status, 409);
+    A = await confirm(r); assert.ok(A);
+    assert.equal((await call('POST', '/auth/verify', { token: new URL(r.body.devLink).searchParams.get('confirmar') })).status, 400, 'link de uso único');
     assert.equal((await call('POST', '/auth/register', { name: 'X', email: `x-${tag}@teste.dev`, password: '123' })).status, 400);
-    B = (await call('POST', '/auth/register', { name: 'Beto', ...beto })).body.token;
+    B = await confirm(await call('POST', '/auth/register', { name: 'Beto', ...beto }));
   });
 
   await t.test('login certo e errado', async () => {

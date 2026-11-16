@@ -34,7 +34,7 @@ async function api(method, url, body) {
   if (r.status === 204) return null;
   const j = await r.json().catch(() => ({}));
   if (r.status === 401 && !url.startsWith('/auth/')) { setToken(null); showAuth(); }
-  if (!r.ok) throw new Error(j.error || `Erro ${r.status}`);
+  if (!r.ok) throw Object.assign(new Error(j.error || `Erro ${r.status}`), { status: r.status, code: j.code });
   return j;
 }
 function setToken(t) { token = t; try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
@@ -719,7 +719,7 @@ $('btnPdfSetlist').onclick = () => {
 };
 
 /* ---------------- contas e bandas ---------------- */
-let authMode = 'login', resetToken = null, canReset = false;
+let authMode = 'login', resetToken = null, canReset = false, confirmToken = null;
 const AUTH_TEXT = {
   login:    { title: 'Entrar', sub: 'Bem-vindo de volta! Entre para ver o repertório da sua banda.', btn: 'Entrar', busy: 'Entrando…', sw: ['Ainda não tem conta?', 'Criar conta'] },
   register: { title: 'Criar conta', sub: 'Leva menos de um minuto. Depois é só criar a banda ou aceitar um convite.', btn: 'Criar conta', busy: 'Criando conta…', sw: ['Já tem conta?', 'Entrar'] },
@@ -736,7 +736,7 @@ function setAuthMode(m) {
   $('authNameL').hidden = !reg; $('pwHint').hidden = !(reg || m === 'reset');
   $('authEmailL').hidden = m === 'reset'; $('authPwL').hidden = m === 'forgot';
   $('forgotRow').hidden = !(m === 'login' && canReset);
-  $('authErr').hidden = true; $('authOk').hidden = true;
+  $('authErr').hidden = true; $('authOk').hidden = true; $('resendRow').hidden = true;
   $('authTitle').textContent = t.title; $('authSub').textContent = t.sub; $('authSubmit').textContent = t.btn;
   $('authSwitchText').textContent = t.sw[0]; $('authSwitch').textContent = t.sw[1];
   $('authPwLabel').textContent = m === 'reset' ? 'Senha nova' : 'Senha';
@@ -754,7 +754,7 @@ $('pwToggle').onclick = () => {
 };
 $('authForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const f = e.target; const err = $('authErr'); err.hidden = true; $('authOk').hidden = true;
+  const f = e.target; const err = $('authErr'); err.hidden = true; $('authOk').hidden = true; $('resendRow').hidden = true;
   const m = authMode, reg = m === 'register', newPw = reg || m === 'reset';
   // validação rápida antes de ir ao servidor
   const bad = (reg && !f.name.value.trim() && 'Informe seu nome')
@@ -766,7 +766,7 @@ $('authForm').addEventListener('submit', async e => {
     const field = bad.includes('nome') ? f.name : bad.includes('mail') ? f.email : f.password;
     field.setAttribute('aria-invalid', 'true'); field.focus(); return;
   }
-  const btn = $('authSubmit'), label = btn.textContent;
+  const btn = $('authSubmit');
   btn.disabled = true; btn.textContent = AUTH_TEXT[m].busy;
   try {
     if (m === 'forgot') {
@@ -779,21 +779,63 @@ $('authForm').addEventListener('submit', async e => {
     const r = m === 'reset'
       ? await api('POST', '/auth/reset', { token: resetToken, password: f.password.value })
       : await api('POST', reg ? '/auth/register' : '/auth/login', { email: f.email.value.trim(), password: f.password.value, ...(reg ? { name: f.name.value.trim() } : {}) });
+    if (r.pending) { // conta criada: falta confirmar o e-mail
+      const email = r.email; setAuthMode('login'); f.email.value = email; f.password.value = '';
+      showPending(email, 'Conta criada! Enviamos um link de confirmação para ' + email + '. Abra o e-mail e clique em "Confirmar meu e-mail" para entrar.');
+      if (r.devLink) console.info('[dev] link de confirmação:', r.devLink);
+      return;
+    }
     if (m === 'reset') { resetToken = null; authMode = 'login'; toast('Senha alterada. Bem-vindo de volta!'); }
     setToken(r.token); $('authScreen').hidden = true; f.reset();
     await start();
-  } catch (ex) { err.textContent = ex.message; err.hidden = false; }
-  finally { btn.disabled = false; btn.textContent = label; }
+  } catch (ex) {
+    err.textContent = ex.message; err.hidden = false;
+    if (ex.code === 'unverified') { pendingEmail = f.email.value.trim(); $('resendRow').hidden = false; }
+  }
+  finally { btn.disabled = false; btn.textContent = AUTH_TEXT[authMode].btn; }
 });
+
+// confirmação de e-mail pendente: mensagem + botão de reenviar
+let pendingEmail = null;
+function showPending(email, text) {
+  pendingEmail = email;
+  $('authOk').textContent = text; $('authOk').hidden = false; $('resendRow').hidden = false; $('authErr').hidden = true;
+}
+$('resendBtn').onclick = async () => {
+  const email = pendingEmail || $('authForm').email.value.trim();
+  if (!email) return;
+  $('resendBtn').disabled = true;
+  try {
+    const r = await api('POST', '/auth/resend', { email });
+    showPending(email, 'Enviamos um novo link para ' + email + '. Confira também a caixa de spam.');
+    if (r.devLink) console.info('[dev] link de confirmação:', r.devLink);
+  } catch (ex) { $('authErr').textContent = ex.message; $('authErr').hidden = false; }
+  finally { setTimeout(() => { $('resendBtn').disabled = false; }, 15000); }
+};
+async function confirmFromLink(t) {
+  try {
+    const r = await api('POST', '/auth/verify', { token: t });
+    setToken(r.token); $('authScreen').hidden = true;
+    toast('E-mail confirmado. Bem-vindo ao Tectune!', 4000);
+    await start();
+  } catch (ex) {
+    authMode = 'login'; showAuth();
+    setTimeout(() => {
+      $('authErr').textContent = ex.message; $('authErr').hidden = false;
+      if (ex.code === 'link_expired') $('resendRow').hidden = false;
+    }, 50);
+  }
+}
 
 // links que chegam por e-mail: ?redefinir=<token> (senha nova) e ?cadastro=<email> (convite)
 (function linksDoEmail() {
   const q = new URLSearchParams(location.search);
-  const r = q.get('redefinir'), c = q.get('cadastro'), f = q.has('esqueci');
-  if (r) { resetToken = r; authMode = 'reset'; setToken(null); }
+  const r = q.get('redefinir'), c = q.get('cadastro'), f = q.has('esqueci'), v = q.get('confirmar');
+  if (v) { setToken(null); confirmToken = v; }
+  else if (r) { resetToken = r; authMode = 'reset'; setToken(null); }
   else if (c && !token) { authMode = 'register'; $('authForm').email.value = c; }
   else if (f && !token) authMode = 'forgot';
-  if (r || c || f) history.replaceState(null, '', location.pathname);
+  if (r || c || f || v) history.replaceState(null, '', location.pathname);
 })();
 api('GET', '/auth/options').then(o => { canReset = !!o.passwordReset; if (authMode === 'login' && !$('authScreen').hidden) $('forgotRow').hidden = !canReset; }).catch(() => {});
 
@@ -907,6 +949,7 @@ $('newBandForm').addEventListener('submit', async e => {
 
 /* ---------------- início ---------------- */
 async function start() {
+  if (confirmToken) { const t = confirmToken; confirmToken = null; return confirmFromLink(t); }
   if (!token) { showAuth(); return; }
   me = await api('GET', '/me');
   await enterBand();

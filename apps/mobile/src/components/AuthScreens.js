@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useData } from '../lib/store';
+import { api } from '../lib/api';
 import { Button } from './ui';
 import { C } from '../lib/theme';
 import { PROD_SERVER } from '../lib/server';
@@ -26,12 +27,25 @@ export function Login() {
   const [mode, setMode] = useState('login');
   const [f, setF] = useState({ name: '', email: '', password: '' });
   const [err, setErr] = useState(null);
+  const [info, setInfo] = useState(null);
+  const [unverified, setUnverified] = useState(false);
   const [busy, setBusy] = useState(false);
   const submit = async () => {
-    setErr(null); setBusy(true);
-    try { await signIn(mode, mode === 'register' ? f : { email: f.email, password: f.password }); }
-    catch (e) { setErr(e.message); }
+    setErr(null); setInfo(null); setUnverified(false); setBusy(true);
+    try {
+      const r = await signIn(mode, mode === 'register' ? f : { email: f.email, password: f.password });
+      if (r?.pending) {
+        setMode('login'); setF({ ...f, password: '' }); setUnverified(true);
+        setInfo(`Conta criada! Enviamos um link de confirmação para ${r.email}. Abra o e-mail, confirme e depois entre aqui.`);
+      }
+    }
+    catch (e) { setErr(e.message); if (e.code === 'unverified') setUnverified(true); }
     finally { setBusy(false); }
+  };
+  const resend = async () => {
+    setErr(null);
+    try { await api.resendConfirmation(serverUrl || PROD_SERVER, f.email.trim()); setInfo(`Enviamos um novo link para ${f.email.trim()}. Confira também o spam.`); }
+    catch (e) { setErr(e.message); }
   };
   return (
     <Shell>
@@ -52,6 +66,8 @@ export function Login() {
         </Pressable>
       ) : null}
       {err ? <Text style={st.err}>{err}</Text> : null}
+      {info ? <Text testID="auth-info" style={st.info}>{info}</Text> : null}
+      {unverified ? <Pressable testID="auth-resend" onPress={resend}><Text style={st.resend}>Reenviar e-mail de confirmação</Text></Pressable> : null}
       <Button testID="auth-submit" kind="primary" title={busy ? 'Aguarde…' : mode === 'register' ? 'Criar conta' : 'Entrar'} disabled={busy} onPress={submit} />
       <Pressable onPress={() => router.push('/settings')}><Text style={st.small}>Servidor: {serverUrl || 'procurar automaticamente'} · alterar</Text></Pressable>
     </Shell>
@@ -107,6 +123,8 @@ function Field({ label, ...props }) {
 }
 
 const st = StyleSheet.create({
+  info: { color: '#166534', backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', borderWidth: 1, borderRadius: 10, padding: 10, fontWeight: '600', lineHeight: 20 },
+  resend: { textAlign: 'center', color: C.accent || '#c2410c', fontWeight: '700', fontSize: 14 },
   forgot: { textAlign: 'right', color: C.muted || '#78716C', fontSize: 13, fontWeight: '600', marginTop: -4 },
   wrap: { flexGrow: 1, justifyContent: 'center', padding: 18 },
   box: { backgroundColor: '#fff', borderRadius: 16, padding: 20, gap: 12, borderWidth: 1, borderColor: C.line, maxWidth: 440, width: '100%', alignSelf: 'center' },

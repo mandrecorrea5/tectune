@@ -1,6 +1,6 @@
 // Acesso à API do sistema web (apps/web)
 export class ApiError extends Error {
-  constructor(status, message) { super(message); this.status = status; }
+  constructor(status, message, code) { super(message); this.status = status; if (code) this.code = code; }
 }
 
 export function normalizeUrl(url) {
@@ -29,7 +29,7 @@ async function request(base, method, path, body, timeoutMs = 10000) {
     });
     if (r.status === 204) return null;
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new ApiError(r.status, j.error || `Erro ${r.status}`);
+    if (!r.ok) throw new ApiError(r.status, j.error || `Erro ${r.status}`, j.code);
     return j;
   } catch (e) {
     if (e instanceof ApiError) throw e;
@@ -44,6 +44,7 @@ export const api = {
   health: base => request(base, 'GET', '/api/health', null, 5000),
   register: (base, data) => request(base, 'POST', '/api/auth/register', data),
   login: (base, data) => request(base, 'POST', '/api/auth/login', data),
+  resendConfirmation: (base, email) => request(base, 'POST', '/api/auth/resend', { email }),
   logout: base => request(base, 'POST', '/api/auth/logout'),
   me: base => request(base, 'GET', '/api/me'),
   createBand: (base, name) => request(base, 'POST', '/api/bands', { name }),

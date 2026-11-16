@@ -8,7 +8,7 @@ const { promisify } = require('util');
 const scrypt = promisify(crypto.scrypt);
 const mail = require('./email');
 
-class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
+class HttpError extends Error { constructor(status, message, code) { super(message); this.status = status; if (code) this.code = code; } }
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SESSION_DAYS = Number(process.env.SESSION_DAYS) || 90;
@@ -75,6 +75,15 @@ function mount(app, { pool, tx, wrap }) {
   };
 
   /* ---------- cadastro e login ---------- */
+  // envia (ou reenvia) o link de confirmação; em dev sem Resend devolve o link (testes)
+  async function sendVerification(user) {
+    const token = crypto.randomBytes(32).toString('base64url');
+    await pool.query(`INSERT INTO email_verifications (token_hash, user_id, expires_at) VALUES ($1, $2, now() + interval '24 hours')`, [sha(token), user.id]);
+    const link = `${mail.appUrl()}/?confirmar=${token}`;
+    const r = await mail.confirmEmail({ to: user.email, name: user.name, link });
+    return r?.simulated ? link : undefined;
+  }
+
   app.post('/api/auth/register', wrap(async (req, res) => {
     const name = String(req.body.name || '').trim().slice(0, 80);
     const email = String(req.body.email || '').trim().toLowerCase().slice(0, 200);
@@ -82,15 +91,61 @@ function mount(app, { pool, tx, wrap }) {
     if (!name) throw new HttpError(400, 'Informe seu nome');
     if (!EMAIL.test(email)) throw new HttpError(400, 'E-mail inválido');
     if (pw.length < 6) throw new HttpError(400, 'A senha precisa ter pelo menos 6 caracteres');
-    const exists = await pool.query('SELECT 1 FROM users WHERE lower(email) = $1', [email]);
-    if (exists.rowCount) throw new HttpError(409, 'Já existe uma conta com esse e-mail');
+    // sem e-mail não há como confirmar a conta: melhor não criar
+    if (!mail.available()) throw new HttpError(503, 'Os cadastros estão temporariamente fechados. Tente de novo mais tarde.');
+    const exists = await pool.query('SELECT email_verified_at FROM users WHERE lower(email) = $1', [email]);
+    if (exists.rowCount) {
+      if (exists.rows[0].email_verified_at) throw new HttpError(409, 'Já existe uma conta com esse e-mail');
+      throw new HttpError(409, 'Esse e-mail já foi cadastrado mas ainda não foi confirmado. Confira sua caixa de entrada ou peça um novo link.', 'unverified');
+    }
     const { rows } = await pool.query('INSERT INTO users (email, name, pass_hash) VALUES ($1, $2, $3) RETURNING id, name, email',
       [email, name, await hashPassword(pw)]);
     // convites feitos por e-mail antes de a pessoa ter conta viram convites normais
     await pool.query(`WITH moved AS (DELETE FROM band_email_invites WHERE lower(email) = $1 RETURNING band_id, invited_by)
       INSERT INTO band_invites (band_id, user_id, invited_by) SELECT band_id, $2, invited_by FROM moved
       ON CONFLICT (band_id, user_id) DO NOTHING`, [email, rows[0].id]);
-    res.status(201).json({ token: await newSession(rows[0].id), user: publicUser(rows[0]) });
+    let devLink;
+    try { devLink = await sendVerification(rows[0]); }
+    catch (err) {
+      console.error('[email] confirmação de cadastro falhou:', err.message);
+      await pool.query('DELETE FROM users WHERE id = $1', [rows[0].id]);
+      throw new HttpError(502, 'Não conseguimos enviar o e-mail de confirmação agora. Tente de novo em alguns minutos.');
+    }
+    // sem sessão: a conta só entra depois de confirmar o e-mail
+    res.status(201).json({ pending: true, email: rows[0].email, ...(devLink ? { devLink } : {}) });
+  }));
+
+  // o link do e-mail: confirma e já entra
+  app.post('/api/auth/verify', wrap(async (req, res) => {
+    const token = String(req.body.token || '');
+    if (!token || token.length > 100) throw new HttpError(400, 'Link inválido');
+    const user = await tx(async c => {
+      const { rows } = await c.query(`DELETE FROM email_verifications WHERE token_hash = $1 AND expires_at > now() RETURNING user_id`, [sha(token)]);
+      if (!rows.length) throw new HttpError(400, 'Este link de confirmação expirou ou já foi usado. Entre com seu e-mail e senha para receber um novo.', 'link_expired');
+      const u = await c.query(`UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $1 RETURNING id, name, email`, [rows[0].user_id]);
+      await c.query('DELETE FROM email_verifications WHERE user_id = $1', [rows[0].user_id]);
+      return u.rows[0];
+    });
+    res.json({ token: await newSession(user.id), user: publicUser(user) });
+  }));
+
+  // novo link de confirmação (mesma resposta exista ou não a conta)
+  app.post('/api/auth/resend', wrap(async (req, res) => {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!EMAIL.test(email)) throw new HttpError(400, 'E-mail inválido');
+    const { rows } = await pool.query('SELECT id, name, email, email_verified_at FROM users WHERE lower(email) = $1', [email]);
+    const out = { ok: true };
+    if (rows.length && !rows[0].email_verified_at) {
+      const recent = await pool.query(`SELECT count(*)::int AS n FROM email_verifications WHERE user_id = $1 AND created_at > now() - interval '15 minutes'`, [rows[0].id]);
+      if (recent.rows[0].n < 3) {
+        try { const devLink = await sendVerification(rows[0]); if (devLink) out.devLink = devLink; }
+        catch (err) {
+          console.error('[email] reenvio de confirmação falhou:', err.message);
+          throw new HttpError(502, 'Não conseguimos enviar o e-mail agora. Tente de novo em alguns minutos.');
+        }
+      }
+    }
+    res.json(out);
   }));
 
   app.post('/api/auth/login', wrap(async (req, res) => {
@@ -102,12 +157,15 @@ function mount(app, { pool, tx, wrap }) {
       failed(key); throw new HttpError(401, 'E-mail ou senha incorretos');
     }
     fails.delete(key);
+    if (!rows[0].email_verified_at) {
+      throw new HttpError(403, 'Confirme seu e-mail para entrar. Enviamos um link para ' + rows[0].email + ' quando você criou a conta.', 'unverified');
+    }
     res.json({ token: await newSession(rows[0].id), user: publicUser(rows[0]) });
   }));
 
   /* ---------- esqueci minha senha (por e-mail) ---------- */
   // o que a tela de login pode oferecer
-  app.get('/api/auth/options', (req, res) => res.json({ passwordReset: mail.available() }));
+  app.get('/api/auth/options', (req, res) => res.json({ passwordReset: mail.available(), signup: mail.available() }));
 
   app.post('/api/auth/forgot', wrap(async (req, res) => {
     if (!mail.available()) throw new HttpError(503, 'A recuperação de senha por e-mail não está disponível. Fale com o admin da sua banda.');
@@ -143,7 +201,8 @@ function mount(app, { pool, tx, wrap }) {
       const { rows } = await c.query(`UPDATE password_resets SET used_at = now()
         WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now() RETURNING user_id`, [sha(token)]);
       if (!rows.length) throw new HttpError(400, 'Este link expirou ou já foi usado. Peça um novo em "Esqueci minha senha".');
-      const u = await c.query('UPDATE users SET pass_hash = $2 WHERE id = $1 RETURNING id, name, email', [rows[0].user_id, await hashPassword(pw)]);
+      // o link chegou por e-mail: também confirma o endereço
+      const u = await c.query('UPDATE users SET pass_hash = $2, email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $1 RETURNING id, name, email', [rows[0].user_id, await hashPassword(pw)]);
       // troca de senha desconecta todos os aparelhos e invalida outros links pendentes
       await c.query('DELETE FROM sessions WHERE user_id = $1', [rows[0].user_id]);
       await c.query('DELETE FROM password_resets WHERE user_id = $1 AND used_at IS NULL', [rows[0].user_id]);
@@ -319,7 +378,12 @@ function startCleanup(pool) {
   const run = () => pool.query('DELETE FROM sessions WHERE last_used_at < now() - make_interval(days => $1)', [SESSION_DAYS])
     .then(r => { if (r.rowCount) console.log(`[auth] ${r.rowCount} sessões expiradas removidas`); })
     .catch(err => console.error('[auth] limpeza de sessões falhou:', err.message));
-  const resets = () => pool.query(`DELETE FROM password_resets WHERE expires_at < now() - interval '1 day'`).catch(() => {});
+  const resets = () => Promise.all([
+    pool.query(`DELETE FROM password_resets WHERE expires_at < now() - interval '1 day'`),
+    pool.query(`DELETE FROM email_verifications WHERE expires_at < now() - interval '1 day'`),
+    // cadastro nunca confirmado some depois de 7 dias (libera o e-mail)
+    pool.query(`DELETE FROM users WHERE email_verified_at IS NULL AND created_at < now() - interval '7 days'`),
+  ]).catch(() => {});
   run(); resets();
   setInterval(() => { run(); resets(); }, 24 * 3600 * 1000).unref();
 }

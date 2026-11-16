@@ -91,10 +91,11 @@ Sem `VPS_SSH_KEY` o job de deploy só avisa e é pulado. Re-publicar sem commit 
 
 ## 4. E-mail (Resend), igual ao felpma
 
-O Tectune manda dois e-mails: **recuperação de senha** ("Esqueci minha senha" na tela de login, link válido por 1 hora,
+O Tectune manda três e-mails: **confirmação de cadastro** (a conta só entra depois de clicar no link, que vale
+24 horas; dá para pedir outro na tela de login; cadastro nunca confirmado é apagado em 7 dias), **recuperação de senha** ("Esqueci minha senha" na tela de login, link válido por 1 hora,
 uso único) e **convite de banda** (para quem já tem conta e também para quem ainda não tem: a pessoa recebe o
-link de cadastro e o convite fica esperando por ela). Sem o Resend configurado, o "Esqueci minha senha" não aparece
-e convites só funcionam para quem já tem conta.
+link de cadastro e o convite fica esperando por ela). Sem o Resend configurado em produção, **novos cadastros ficam
+bloqueados** (não há como confirmar o e-mail), o "Esqueci minha senha" não aparece e convites só funcionam para quem já tem conta.
 
 1. **Resend → Domains → Add domain**: `tectune.com.br` (região: São Paulo, `sa-east-1`, se aparecer a opção).
 2. O Resend mostra 3 ou 4 registros DNS. Crie **exatamente** esses na Cloudflare (**DNS → Records**), todos *DNS only*:
@@ -133,6 +134,7 @@ docker logs -f ingress-caddy 2>&1 | grep tectune      # certificado e proxy
 $C exec app node src/cli.js users
 $C exec app node src/cli.js stats
 $C exec app node src/cli.js reset-password email@x.com   # gera senha nova e desconecta os aparelhos
+$C exec app node src/cli.js verify email@x.com           # confirma o e-mail na mão (se o e-mail não chegou)
 
 # backups (todo dia às BACKUP_HOUR, guarda BACKUP_KEEP_DAYS dias; e antes de todo deploy)
 bash scripts/backup.sh agora

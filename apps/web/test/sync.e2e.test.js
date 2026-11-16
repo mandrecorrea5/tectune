@@ -20,7 +20,8 @@ const iso = ms => new Date(Date.now() + ms).toISOString();
 test('sincronização offline-first', async t => {
   const reg = await call('POST', '/auth/register', { name: 'Teste Sync', email: `sync-${randomUUID()}@teste.dev`, password: 'segredo123' });
   assert.equal(reg.status, 201);
-  auth.token = reg.body.token;
+  const v = await call('POST', '/auth/verify', { token: new URL(reg.body.devLink).searchParams.get('confirmar') });
+  auth.token = v.body.token;
   const band = await call('POST', '/bands', { name: 'Banda do teste de sync' });
   assert.equal(band.status, 201);
   auth.band = band.body.id;

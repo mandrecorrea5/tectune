@@ -182,6 +182,7 @@ export function DataProvider({ children }) {
     if (!url) { const found = (await probeServers(url)).find(r => r.ok); if (found) url = await setServerUrl(found.url); }
     if (!url) throw new Error('Servidor não encontrado. Configure o endereço em ⚙︎ Servidor.');
     const r = mode === 'register' ? await api.register(url, data) : await api.login(url, data);
+    if (r.pending) return r; // conta criada: falta confirmar o e-mail
     setSession(r.token, null);
     await saveAccount({ ...acct.current, token: r.token, user: r.user });
     await refreshMe();
