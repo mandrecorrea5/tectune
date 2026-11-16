@@ -431,3 +431,135 @@ body.readonly .ro-note{display:inline}
 .field[hidden]{display:none}
 .brand.light .logo b{background:#f5f5f4}
 .brand.light .logo b:nth-child(2){background:var(--accent)}
+
+/* =====================================================================
+   Celular (até 760px): uma tela por vez, abas embaixo, menu no topo.
+   Nada pode passar da largura da tela: cada painel rola por dentro.
+   ===================================================================== */
+.mtabs,.mmenu,#dlgMenu{display:none}
+@media (max-width:760px){
+  html,body{overflow-x:hidden}
+  body{height:100vh;height:100dvh;min-height:0;overflow:hidden}
+
+  /* topo: marca, banda, status e menu; setlist ocupa a linha de baixo */
+  .topbar{padding:8px 12px;gap:8px;flex-wrap:wrap;padding-top:max(8px,env(safe-area-inset-top))}
+  .brand{font-size:15px;margin-right:0;gap:7px}
+  .brand .logo{width:20px;height:20px}
+  .bandpick{border-right:0;padding-right:0;margin-right:0;min-width:0;flex:1}
+  .bandpick select{max-width:100%;width:100%;font-size:13px;padding:6px 8px}
+  #bandBtn,#slEdit,#slNew,#btnPdfSong,#btnPdfSetlist,#btnPdfAll{display:none}
+  .topbar>.spacer{display:none}
+  .status span{display:none}
+  .status{padding:0 2px}
+  .mmenu{display:inline-flex;flex-direction:column;justify-content:center;gap:4px;width:40px;height:36px;padding:0 10px}
+  .mmenu span{display:block;height:2px;border-radius:2px;background:var(--ink)}
+  .slpick{order:10;width:100%}
+  #slSelect{flex:1;max-width:none;width:100%;font-size:15px;padding:9px 10px}
+
+  /* uma tela por vez */
+  main{display:block !important;flex:1;min-height:0;position:relative}
+  main>.col{display:none;height:100%;border:0}
+  body[data-mtab="songs"] main>.songs,
+  body[data-mtab="editor"] main>.editor,
+  body[data-mtab="preview"] main>.preview,
+  body.palco main>.preview{display:flex}
+  body.palco main>.songs,body.palco main>.editor{display:none !important}
+
+  /* abas */
+  .mtabs{display:flex;background:var(--panel);border-top:1px solid var(--line);padding:4px 6px calc(4px + env(safe-area-inset-bottom));gap:4px;flex:none}
+  .mtabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:transparent;border-radius:10px;padding:6px 2px 5px;font-size:11.5px;font-weight:700;color:var(--muted)}
+  .mtabs button.on{color:var(--ink);background:#fff}
+  .mtabs .mshow{color:#fff;background:var(--accent)}
+  .mtabs .ic{font-style:normal;font-size:18px;line-height:1;height:20px}
+  .ic-list::before{content:"☰"}.ic-edit::before{content:"✎"}.ic-page::before{content:"▤"}.ic-play::before{content:"▶";font-size:15px}
+  body.palco .mtabs{display:none}
+
+  /* músicas */
+  .songs .colhead{min-height:0;padding:12px 14px 8px}
+  .slinfo span{font-size:17px}
+  .songbtns{padding:4px 12px 8px}
+  .songbtns button{padding:10px 6px;font-size:14px}
+  #songList{max-height:none;padding:4px 10px 16px}
+  #songList li{padding:12px 10px;grid-template-columns:28px 1fr auto;background:#fff;border:1px solid var(--line);margin-bottom:6px}
+  #songList li.on{border-color:var(--ink);box-shadow:inset 3px 0 0 var(--accent)}
+  #songList .t{font-size:15.5px}
+  #songList .s{font-size:12.5px}
+  #songList li .acts{display:none}
+  #songList li.on .acts{display:flex}
+  #songList .acts button{padding:6px 7px;font-size:15px}
+
+  /* cifra (editor) */
+  .editor .colhead{gap:6px 10px;padding:8px 12px;min-height:0}
+  .editor .tgroup{font-size:12px}
+  .editor .tgroup button{padding:6px 9px}
+  .editor .tgroup select{padding:5px 6px}
+  .editor textarea{min-height:0;padding:12px 14px;font-size:14px}
+  details.help{max-height:45%}
+  .help table{display:block;overflow-x:auto}
+  .help td:first-child{white-space:normal;word-break:break-word}
+  .issues{max-height:30%;overflow:auto}
+
+  /* folha / prévia */
+  .phead{min-height:0;padding:8px 10px;gap:6px}
+  .ptitle,#pages{display:none}
+  .phead .spacer{display:none}
+  .pctl{flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;gap:4px;padding:2px 0}
+  .pctl::-webkit-scrollbar{display:none}
+  .pctl>*{flex:none}
+  .pctl button{padding:7px 10px}
+  .pctl .playbtn{width:40px;height:40px}
+  #pPalco{display:none !important}
+  body.palco .pctl{flex-wrap:wrap;overflow:visible;row-gap:6px}
+  body.palco .ptom{margin:0;padding-left:6px}
+  .pinfo{padding:5px 12px}
+  .pkeys{display:none}
+  .preview .scroll{padding:8px 6px 24px}
+  .page{padding:16px 12px 22px;min-height:0;border-radius:6px}
+  .ph{flex-direction:column;gap:8px}
+  .ph h1{font-size:calc(22px * var(--hs))}
+  .page.pc2 .body,.page.pc3 .body{column-count:1}
+
+  /* modo Show no celular */
+  .showbar{flex-wrap:wrap;gap:6px 8px;padding:8px 10px;padding-top:max(8px,env(safe-area-inset-top))}
+  .showtitle{order:-1;flex:1 1 100%;font-size:15px}
+  .showbar .sview{flex:1}
+  .showbar .sview button{flex:1;padding:8px 6px}
+  #showExit,#liveBtn{padding:8px 10px}
+  .lyline{font-size:calc(26px * var(--s, 1))}
+  .pcount b{font-size:96px}
+  .pdone{bottom:16px;max-width:calc(100vw - 24px)}
+
+  /* convites no topo */
+  .invitebar{padding:8px 10px}
+  .invite{flex-wrap:wrap}
+  .invite span{flex:1 1 100%}
+  .invite button{flex:1}
+
+  /* diálogos: cabem na tela e rolam por dentro */
+  dialog,dialog.wide{width:calc(100vw - 16px);max-width:calc(100vw - 16px);max-height:calc(100dvh - 24px);overflow:auto;padding:18px 16px 14px;border-radius:14px}
+  dialog.viewer{width:100vw;max-width:100vw;max-height:100dvh;height:100dvh;border-radius:0;padding:0}
+  .dlg-actions{flex-wrap:wrap}
+  .row2{flex-wrap:wrap}
+  .row2 input{min-width:0;flex:1 1 160px}
+  .vhead{padding:8px 10px}
+  .vhead .vtitle{flex:1 1 100%}
+  .members li{flex-wrap:wrap}
+
+  /* menu (folha que sobe de baixo) */
+  #dlgMenu[open]{display:block}
+  dialog.sheet{margin:auto 0 0;width:100vw;max-width:100vw;border-radius:16px 16px 0 0;padding:10px 14px calc(14px + env(safe-area-inset-bottom))}
+  .sheethead{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 8px}
+  .sheethead b{font-size:16px}
+  .menulist{display:flex;flex-direction:column;gap:8px}
+  .menulist button{text-align:left;padding:13px 14px;font-size:15px}
+  .menulist hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+  body.readonly .menulist .admin-only{display:none}
+
+  /* entrar / cadastro e escolha de banda */
+  .gate{grid-template-columns:minmax(0,1fr);overflow-x:hidden}
+  .gate-main{padding:28px 18px calc(28px + env(safe-area-inset-bottom));align-items:flex-start}
+  .gate.single .gatebox{padding:22px 18px;border-radius:16px}
+  .gatebox h2{font-size:23px}
+
+  #toast{bottom:calc(78px + env(safe-area-inset-bottom))}
+}

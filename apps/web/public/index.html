@@ -28,6 +28,7 @@
   <button id="btnPdfSong">Ver PDF da música</button>
   <button id="btnPdfSetlist" title="Configurar e imprimir só a lista de músicas">Folha do setlist</button>
   <button id="btnPdfAll" class="primary">Ver PDF do show</button>
+  <button id="mMenuBtn" class="mmenu" type="button" aria-label="Menu" title="Menu"><span></span><span></span><span></span></button>
 </header>
 
 <div id="inviteBar" class="invitebar" hidden></div>
@@ -131,6 +132,28 @@
     <div id="pDone" class="pdone" hidden><span>Fim da música</span><button id="pDoneNext" class="primary">Próxima ▶</button></div>
   </section>
 </main>
+
+<!-- celular: uma tela por vez, com abas embaixo -->
+<nav id="mTabs" class="mtabs" aria-label="Telas">
+  <button type="button" data-tab="songs"><i class="ic ic-list"></i>Músicas</button>
+  <button type="button" data-tab="editor"><i class="ic ic-edit"></i>Cifra</button>
+  <button type="button" data-tab="preview"><i class="ic ic-page"></i>Folha</button>
+  <button type="button" id="mShow" class="mshow"><i class="ic ic-play"></i>Show</button>
+</nav>
+
+<!-- celular: menu com as ações do topo -->
+<dialog id="dlgMenu" class="sheet">
+  <div class="sheethead"><b>Menu</b><button type="button" class="ghost" data-close aria-label="Fechar">✕</button></div>
+  <div class="menulist">
+    <button type="button" data-proxy="bandBtn">Banda, membros e conta</button>
+    <button type="button" data-proxy="slEdit" class="admin-only">Editar esta setlist</button>
+    <button type="button" data-proxy="slNew" class="admin-only">+ Nova setlist</button>
+    <hr>
+    <button type="button" data-proxy="btnPdfSong">PDF da música</button>
+    <button type="button" data-proxy="btnPdfSetlist">Folha do setlist</button>
+    <button type="button" data-proxy="btnPdfAll" class="primary">PDF do show completo</button>
+  </div>
+</dialog>
 
 <!-- Setlist: criar / editar -->
 <!-- login / cadastro -->

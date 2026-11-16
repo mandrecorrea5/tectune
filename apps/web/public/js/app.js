@@ -236,7 +236,7 @@ function renderList() {
 $('songList').addEventListener('click', async e => {
   const li = e.target.closest('li'); if (!li) return;
   const i = +li.dataset.i; const a = e.target.closest('button')?.dataset.a;
-  if (!a) { cur = i; renderAll(); return; }
+  if (!a) { cur = i; renderAll(); if (isPhone()) setTab('preview'); return; }
   try {
     const list = ids();
     if (a === 'up' && i > 0) { [list[i - 1], list[i]] = [list[i], list[i - 1]]; await setOrder(list, cur === i ? i - 1 : cur === i - 1 ? i : cur); }
@@ -946,6 +946,28 @@ $('newBandForm').addEventListener('submit', async e => {
   try { const r = await api('POST', '/bands', { name: e.target.name.value.trim() }); me = r; bandId = r.id; e.target.reset(); $('dlgBand').close(); await enterBand(); toast('Banda criada — você é o admin'); }
   catch (ex) { toast(ex.message); }
 });
+
+/* ---------------- celular: abas e menu ---------------- */
+const phoneMq = matchMedia('(max-width: 760px)');
+const isPhone = () => phoneMq.matches;
+function setTab(t) {
+  document.body.dataset.mtab = t;
+  document.querySelectorAll('#mTabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  // a folha mede a largura disponível: só dá para montar com ela visível
+  if (t === 'preview') renderPreview();
+  if (t === 'editor') $('text').blur();
+}
+setTab('songs');
+document.querySelectorAll('#mTabs [data-tab]').forEach(b => { b.onclick = () => setTab(b.dataset.tab); });
+$('mShow').onclick = () => { setTab('preview'); $('pPalco').click(); };
+$('mMenuBtn').onclick = () => $('dlgMenu').showModal();
+$('dlgMenu').addEventListener('click', e => {
+  if (e.target === e.currentTarget || e.target.closest('[data-close]')) return $('dlgMenu').close();
+  const b = e.target.closest('[data-proxy]'); if (!b) return;
+  $('dlgMenu').close(); $(b.dataset.proxy).click();
+});
+// virou o aparelho / redimensionou: refaz a folha na largura nova
+let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (sl) renderPreview(); }, 150); });
 
 /* ---------------- início ---------------- */
 async function start() {
