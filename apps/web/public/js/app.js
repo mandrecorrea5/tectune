@@ -117,6 +117,10 @@ window.addEventListener('beforeunload', e => {
 
 /* ---------------- telas: Show | Cifra ---------------- */
 function go(view) {
+  // voltar do celular (gesto ou botão) sai da cifra para o show: a cifra fica numa entrada do histórico
+  if (view === 'song' && document.body.dataset.view !== 'song') navPush('song');
+  if (view !== 'song') navBack('song');
+  document.body.classList.remove('barsheet', 'pmore-open', 'reorder');
   document.body.dataset.view = view;
   document.querySelectorAll('.rail [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === view));
   document.querySelector('.appmain').scrollTop = 0;
@@ -642,7 +646,9 @@ function gotoSong(d) {
   $('pScroll').scrollTo({ top: 0 });
 }
 function setPalco(on) {
+  if (on && !isPalco()) navPush('palco'); else if (!on && isPalco()) navBack('palco');
   document.body.classList.toggle('palco', on);
+  document.body.classList.remove('pmore-open', 'barsheet');
   keepAwake(on); // no palco a tela não apaga
   if (on && document.body.dataset.view !== 'song') { document.body.dataset.view = 'song'; renderSongView(); }
   renderPreview();
@@ -804,6 +810,7 @@ function nextSel(sg, id) {
 // põe o acorde no compasso selecionado. "Dividir" ligado: entra junto com os outros, senão troca e avança.
 function putChord(ch, { split = splitOn } = {}) {
   if (!isAdmin() || !curSong()) return;
+  buzz();
   const text = curSong().content, sg = parseSong(text);
   if (!selBar) {
     const last = sg.sections.length - 1;
@@ -833,7 +840,7 @@ function moveSel(d) {
   selectBar(all[n], { scroll: true });
 }
 let splitOn = false, joinNext = false; // joinNext: depois do espaço, o próximo acorde entra no mesmo compasso
-$('tSplit').onclick = () => { splitOn = !splitOn; $('tSplit').classList.toggle('on', splitOn); $('tSplit').setAttribute('aria-pressed', String(splitOn)); };
+$('tSplit').onclick = () => { splitOn = !splitOn; ['tSplit', 'tSplit2'].forEach(id => { $(id).classList.toggle('on', splitOn); $(id).setAttribute('aria-pressed', String(splitOn)); }); };
 $('tSim').onclick = () => putChord('%', { split: false });
 $('tRest').onclick = () => putChord('-');
 $('tAdd').onclick = () => {
@@ -980,6 +987,7 @@ function armLyric(i) {
 // toque no compasso com um trecho armado: a letra vai para ele e o próximo trecho já fica armado
 function placeArmed(e) {
   const b = e.target.closest('.bar[data-id]'); if (!b || isPalco()) return false;
+  buzz();
   const s = curSong(); const items = lyricItems(s.lyrics); const it = items[lyrArmed]; if (!it) return false;
   const sg = parseSong(s.content);
   const r = setBarLyric(s.content, b.dataset.id, sg, it.text);
@@ -1812,6 +1820,51 @@ async function keepAwake(on) {
   } catch (e) { /* sem suporte ou aba em segundo plano */ }
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && isPalco()) keepAwake(true); });
+
+/* ---------------- celular: jeito de app ---------------- */
+// toque curto de vibração (Android) ao pôr acorde ou letra
+function buzz() { try { navigator.vibrate?.(8); } catch (e) {} }
+// histórico: o "voltar" do celular fecha a janela aberta, sai do palco ou volta da cifra para o show
+let popGuard = false, closingByPop = false;
+function navPush(tag) { if (history.state?.t !== tag) history.pushState({ t: tag }, ''); }
+function navBack(tag) { if (history.state?.t === tag) { popGuard = true; history.back(); } }
+const showModal0 = HTMLDialogElement.prototype.showModal;
+HTMLDialogElement.prototype.showModal = function () { showModal0.call(this); history.pushState({ t: 'dlg' }, ''); };
+document.addEventListener('close', e => { if (e.target.tagName === 'DIALOG' && !closingByPop) navBack('dlg'); }, true);
+addEventListener('popstate', () => {
+  if (popGuard) { popGuard = false; return; }
+  const open = [...document.querySelectorAll('dialog[open]')].pop();
+  if (open) { closingByPop = true; open.close(); closingByPop = false; return; }
+  if (document.body.classList.contains('barsheet') || document.body.classList.contains('pmore-open')) { document.body.classList.remove('barsheet', 'pmore-open'); return; }
+  if (isPalco()) { navPush('palco'); askExit(); return; }
+  if (document.body.dataset.view === 'song') {
+    document.body.dataset.view = 'show';
+    document.querySelectorAll('.rail [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === 'show'));
+    renderShow();
+  }
+});
+// ações do show (celular): menu que sobe de baixo
+$('showMore').onclick = () => { $('showMenuTitle').textContent = sl?.name || 'Show'; $('dlgShowMenu').showModal(); };
+$('dlgShowMenu').addEventListener('click', e => {
+  const b = e.target.closest('[data-proxy]'); if (!b) return;
+  $('dlgShowMenu').close(); setTimeout(() => $(b.dataset.proxy).click(), 0);
+});
+$('fabNew').onclick = () => $('songNew').click();
+$('reorderBtn').onclick = () => {
+  const on = document.body.classList.toggle('reorder');
+  $('reorderBtn').textContent = on ? 'Pronto' : 'Reordenar'; $('reorderBtn').setAttribute('aria-pressed', String(on));
+};
+// palco: andamento, tom, tamanho e contagem num painel (no celular)
+$('pMoreBtn').onclick = () => { const on = document.body.classList.toggle('pmore-open'); $('pMoreBtn').setAttribute('aria-expanded', String(on)); };
+// detalhes do compasso (celular): folha que sobe de baixo
+function barSheet(on) { document.body.classList.toggle('barsheet', on); }
+$('dockMore').onclick = () => barSheet(true);
+$('barSheetClose').onclick = () => barSheet(false);
+document.querySelectorAll('.sheettools [data-proxy]').forEach(b => { b.onclick = () => $(b.dataset.proxy).click(); });
+document.addEventListener('pointerdown', e => {
+  if (document.body.classList.contains('barsheet') && !e.target.closest('#barCard, #dock, #sheet')) barSheet(false);
+  if (document.body.classList.contains('pmore-open') && !e.target.closest('#pctl')) { document.body.classList.remove('pmore-open'); }
+});
 
 /* ---------------- início ---------------- */
 try { setMode(localStorage.getItem(MODE_KEY) === 'code' ? 'code' : 'visual'); } catch (e) { setMode('visual'); }

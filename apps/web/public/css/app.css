@@ -687,6 +687,26 @@ body.lyrmode .dock{display:none}
 body.lyrmode .bar{cursor:copy}
 body.lyrmode .bar:hover{border-color:var(--accent) !important;background-color:#2A1D14}
 
+
+@keyframes sheetup{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+/* ---------- jeito de app (toque) ---------- */
+html{-webkit-tap-highlight-color:transparent}
+body{overscroll-behavior:none}
+button,a,.bar,.cchip,.setrows li{touch-action:manipulation}
+button,.bar,.cchip,.railbtn,.setrows li{-webkit-user-select:none;user-select:none}
+.titlerow{display:flex;align-items:flex-start;gap:10px}
+.titlerow h1{flex:1;min-width:0}
+.titlerow .iconbtn{flex:none;margin-top:6px;width:44px;height:44px}
+.pmore{display:contents}
+.listhead{align-items:center;gap:8px;padding:4px 2px 0}
+.listhead h2{margin:0;font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.fab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));height:56px;padding:0 20px 0 16px;border-radius:28px;border:0;background:var(--ink);color:#0E0D0C;font-size:15px;font-weight:800;gap:8px;box-shadow:0 12px 30px rgba(0,0,0,.55);z-index:30}
+.fab svg{width:22px;height:22px;stroke-width:2.4}
+body:not([data-view="show"]) .fab,body.palco .fab{display:none !important}
+.sheettools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.sheettools .tool{flex-direction:column;gap:2px;height:56px;padding:0 4px;font-size:12px}
+.sheettools .tool svg{width:18px;height:18px}
+
 /* =====================================================================
    Tablet e celular
    ===================================================================== */
@@ -770,7 +790,6 @@ body.lyrmode .bar:hover{border-color:var(--accent) !important;background-color:#
   body.palco{grid-template-rows:minmax(0,1fr)}
   .showbar{gap:6px 8px;padding:8px 10px}
   .showtitle2{order:-1;flex:1 1 100%;font-size:15px}
-  .pctl{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;padding:6px 10px}
   .pctl::-webkit-scrollbar{display:none}
   .pctl>*{flex:none}
   .pkeys{display:none}
@@ -797,12 +816,44 @@ body.lyrmode .bar:hover{border-color:var(--accent) !important;background-color:#
   .showtop .ghost{height:36px;padding:0 10px}
   .members li .who{flex:1 1 100%}
   .members li{gap:6px 8px}
-  .pctl{flex-wrap:wrap !important;justify-content:center;overflow:visible !important;row-gap:4px}
   .pctl .playbtn{width:44px;height:44px}
   .ptom{border-left:0;padding-left:0}
   body.palco .scroll{padding:10px 12px 40vh}
   .lyline{font-size:calc(26px * var(--s, 1))}
   .phone-only{display:flex !important}
+  /* show: lista primeiro; ações num menu ⋯ e botão flutuante para nova música */
+  .showacts,.showtop #slEdit,.showtop #slNew{display:none !important}
+  .showtitle h1{font-size:30px}
+  .showhead{margin-bottom:10px}
+  .showmain{gap:10px}
+  .showmain .curve{order:3}
+  .listhead{order:1}
+  #songList{order:2}
+  #vShow{padding-bottom:110px}
+  .setrows li{min-height:64px}
+  .setrows .acts{display:none}
+  body.reorder .setrows .acts{display:flex;width:100%;justify-content:flex-end}
+  body.reorder .setrows .acts button{width:44px;height:40px}
+  .setrows .st{min-width:0;padding:4px 8px;font-size:11.5px}
+  .setrows .k{margin-left:34px}
+  .curvebars{height:84px}
+  /* cifra: detalhes do compasso numa folha que sobe; a barra fica só com acordes */
+  #barCard{display:none}
+  body.barsheet #barCard{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;max-height:80dvh;overflow-y:auto;border-radius:20px 20px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 0 0 100vmax rgba(0,0,0,.55),0 -10px 40px rgba(0,0,0,.6);border-bottom:0;animation:sheetup .18s ease-out}
+  #tSplit,#tSim,#tRest,#tAdd{display:none !important}
+  .dockrow:last-child{gap:6px}
+  #dockMore{height:38px;flex:none}
+  /* palco: controles no polegar, embaixo; andamento, tom e tamanho no ⚙ */
+  body.palco .pctl{position:fixed;left:0;right:0;bottom:0;z-index:15;justify-content:space-between;flex-wrap:nowrap;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #22201D;border-bottom:0;background:rgba(11,10,9,.97);backdrop-filter:blur(8px)}
+  body.palco .pctl .playbtn{width:60px;height:60px;font-size:20px}
+  body.palco .pctl>button{height:48px;min-width:48px}
+  .pmore{display:none}
+  body.pmore-open .pmore{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;position:fixed;left:8px;right:8px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:16;padding:14px;border-radius:18px;background:var(--panel);border:1px solid var(--line2);box-shadow:0 -10px 40px rgba(0,0,0,.6);animation:sheetup .15s ease-out}
+  .pmore .ptempo,.pmore .ptom{border:1px solid var(--line);border-radius:12px;padding:4px 6px;margin:0}
+  .pmore button{height:44px;min-width:44px}
+  #pMoreBtn[aria-expanded="true"]{background:var(--accentBg);border-color:var(--accent);color:#FFB48A}
+  .pinfo{font-size:12px}
+  body.palco .scroll{padding-bottom:calc(40vh + 90px)}
   .lyrarm{margin:0 8px;bottom:8px;padding:8px 8px 8px 12px}
   .lyrarmtext b{font-size:15px}
   .lyropen span{display:none}

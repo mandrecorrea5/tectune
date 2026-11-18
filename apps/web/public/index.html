@@ -38,6 +38,8 @@
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
   <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></symbol>
   <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
   <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6h16M4 11h16M4 16h10M4 21h7"/></symbol>
   <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
   <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></symbol>
@@ -79,7 +81,7 @@
     <header class="showhead">
       <div class="showtitle">
         <p class="eyebrow" id="slWhen"></p>
-        <h1 id="slTitle">—</h1>
+        <div class="titlerow"><h1 id="slTitle">—</h1><button type="button" id="showMore" class="iconbtn ghostline phone-only member-only" aria-label="Mais ações do show"><svg aria-hidden="true"><use href="#i-more"/></svg></button></div>
         <p class="showmeta" id="slMeta"></p>
       </div>
       <div class="showacts">
@@ -96,6 +98,7 @@
           <div class="cardhead"><h2 id="curveH">Curva de energia</h2><span class="hint">BPM de cada música na ordem do show. Reordene e veja a curva mudar.</span></div>
           <div id="curve" class="curvebars" role="img" aria-label="BPM das músicas na ordem do show"></div>
         </section>
+        <div class="listhead phone-only"><h2>Músicas</h2><span class="spacer"></span><button type="button" id="reorderBtn" class="link admin-only" aria-pressed="false">Reordenar</button></div>
         <ol id="songList" class="setrows" aria-label="Ordem do show"></ol>
       </div>
 
@@ -142,6 +145,8 @@
       </aside>
     </div>
   </section>
+
+  <button type="button" id="fabNew" class="fab phone-only admin-only" aria-label="Nova música"><svg aria-hidden="true"><use href="#i-plus"/></svg><span>Música</span></button>
 
   <!-- ============ MÚSICA: estúdio (cifra visual) ============ -->
   <section id="vSong" class="view" aria-label="Cifra">
@@ -206,6 +211,8 @@
           <button type="button" id="pPlay" class="playbtn" title="Tocar / pausar (espaço)">▶</button>
           <button type="button" id="pStop" class="ghost" title="Parar">■</button>
           <button type="button" id="pNext" class="iconbtn" title="Próxima música (→)" aria-label="Próxima música"><svg aria-hidden="true"><use href="#i-right"/></svg></button>
+          <button type="button" id="pMoreBtn" class="iconbtn phone-only" aria-label="Andamento, tom e tamanho" aria-expanded="false"><svg aria-hidden="true"><use href="#i-sliders"/></svg></button>
+          <div class="pmore" id="pmore">
           <span class="ptempo">
             <button type="button" id="pSlower" class="ghost" title="Mais devagar">−</button>
             <span id="pTempo" title="Clique para voltar a 100%">♩ = 90</span>
@@ -217,6 +224,7 @@
           <button type="button" id="pZoomOut" class="ghost" title="Diminuir">A−</button>
           <button type="button" id="pZoomIn" class="ghost" title="Aumentar">A+</button>
           <button type="button" id="pCount1" class="ghost ctoggle" title="Contagem de 1 compasso antes de começar">Contagem</button>
+          </div>
         </div>
         <div class="pinfo palco-only-flex"><span id="pInfo"></span><span class="pkeys">espaço: tocar/pausar · ← → música · clique num compasso para começar dali</span></div>
 
@@ -253,7 +261,13 @@
 
       <aside class="inspector">
         <section class="card" id="barCard" aria-labelledby="barH">
-          <div class="cardhead"><h2 id="barH">Compasso</h2><span id="barWhere" class="where">Toque num compasso</span></div>
+          <div class="cardhead"><h2 id="barH">Compasso</h2><span id="barWhere" class="where">Toque num compasso</span><span class="spacer"></span><button type="button" id="barSheetClose" class="ghost iconbtn phone-only" aria-label="Fechar"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
+          <div class="sheettools phone-only admin-only">
+            <button type="button" class="tool" data-proxy="tSplit" id="tSplit2"><svg aria-hidden="true"><use href="#i-split"/></svg>Dividir</button>
+            <button type="button" class="tool" data-proxy="tSim"><b>%</b>Repetir</button>
+            <button type="button" class="tool" data-proxy="tRest"><b>–</b>Pausa</button>
+            <button type="button" class="tool" data-proxy="tAdd"><svg aria-hidden="true"><use href="#i-plus"/></svg>Compasso</button>
+          </div>
           <div id="barBeats" class="beatsbox"></div>
           <div class="barfields admin-only">
             <label>Acordes<input id="barChords" autocomplete="off" spellcheck="false" placeholder="ex.: C G/B"></label>
@@ -322,6 +336,7 @@
         <div id="dockUsed" class="chiprow"></div>
       </div>
       <div class="dockrow">
+        <button type="button" id="dockMore" class="tool phone-only" aria-label="Detalhes do compasso"><svg aria-hidden="true"><use href="#i-sliders"/></svg>Compasso</button>
         <button type="button" id="tSplit" class="tool" aria-pressed="false" title="Ligado: o acorde escolhido entra junto com os outros no mesmo compasso"><svg aria-hidden="true"><use href="#i-split"/></svg>Dividir compasso</button>
         <button type="button" id="tSim" class="tool"><b>%</b>Repetir anterior</button>
         <button type="button" id="tRest" class="tool"><b>–</b>Pausa</button>
@@ -540,6 +555,18 @@
       <button type="submit" class="accent">Salvar</button>
     </div>
   </form>
+</dialog>
+
+<!-- celular: ações do show -->
+<dialog id="dlgShowMenu" class="sheet">
+  <div class="dlghead"><h2 id="showMenuTitle">Show</h2><button type="button" class="ghost iconbtn" data-close aria-label="Fechar"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="acctlist">
+    <button type="button" data-proxy="songLib" class="admin-only"><svg aria-hidden="true"><use href="#i-music"/></svg><span>Trazer da biblioteca<small>Músicas que você já cifrou</small></span></button>
+    <button type="button" data-proxy="btnPdfAll"><svg aria-hidden="true"><use href="#i-print"/></svg><span>PDF do show<small>Capa com a ordem + uma página por música</small></span></button>
+    <button type="button" data-proxy="btnPdfSetlist"><svg aria-hidden="true"><use href="#i-list"/></svg><span>Folha do setlist<small>Só a lista de músicas, para o palco</small></span></button>
+    <button type="button" data-proxy="slEdit" class="admin-only"><svg aria-hidden="true"><use href="#i-text"/></svg><span>Editar show<small>Nome, data, local e observações</small></span></button>
+    <button type="button" data-proxy="slNew" class="admin-only"><svg aria-hidden="true"><use href="#i-plus"/></svg><span>Novo show</span></button>
+  </div>
 </dialog>
 
 <dialog id="dlgLyrics" class="wide">
