@@ -1,6 +1,6 @@
 // Criar / editar / excluir setlist
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useData } from '../lib/store';
 import { Button, confirmAsync } from '../components/ui';
@@ -20,12 +20,11 @@ export default function SetlistForm() {
   const [date, setDate] = useState(toBr(cur?.event_date));
   const [venue, setVenue] = useState(cur?.venue || '');
   const [notes, setNotes] = useState(cur?.notes || '');
-  const [cols, setCols] = useState(cur?.cols || 4);
   const [err, setErr] = useState(null);
   const save = async () => {
     if (!name.trim()) { setErr('Dê um nome para a setlist'); return; }
     if (date && !toIso(date)) { setErr('Data no formato DD/MM/AAAA'); return; }
-    const data = { name: name.trim(), event_date: toIso(date), venue: venue.trim() || null, notes: notes.trim() || null, cols };
+    const data = { name: name.trim(), event_date: toIso(date), venue: venue.trim() || null, notes: notes.trim() || null };
     if (cur) { await updateSetlist(cur.id, data); router.back(); }
     else { const nid = await createSetlist(data); router.replace(`/setlist/${nid}`); }
   };
@@ -41,20 +40,9 @@ export default function SetlistForm() {
       <Field label="Nome do show">
         <TextInput testID="sl-name" value={name} onChangeText={t => { setName(t); setErr(null); }} placeholder="Ex.: Casamento Ana & Pedro" style={st.input} autoFocus={!cur} />
       </Field>
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <Field label="Data" style={{ flex: 1 }}>
-          <TextInput testID="sl-date" value={date} onChangeText={t => { setDate(maskDate(t)); setErr(null); }} placeholder="DD/MM/AAAA" keyboardType="number-pad" style={st.input} />
-        </Field>
-        <Field label="Compassos por linha" style={{ flex: 1 }}>
-          <View style={st.seg}>
-            {[4, 6, 8].map(n => (
-              <Pressable key={n} onPress={() => setCols(n)} style={[st.segI, cols === n && st.segOn]}>
-                <Text style={[st.segT, cols === n && { color: '#fff' }]}>{n}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Field>
-      </View>
+      <Field label="Data">
+        <TextInput testID="sl-date" value={date} onChangeText={t => { setDate(maskDate(t)); setErr(null); }} placeholder="DD/MM/AAAA" keyboardType="number-pad" style={st.input} />
+      </Field>
       <Field label="Local">
         <TextInput testID="sl-venue" value={venue} onChangeText={setVenue} placeholder="Ex.: Espaço Villa" style={st.input} />
       </Field>

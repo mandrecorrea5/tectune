@@ -1,5 +1,5 @@
 // Gera o HTML da folha (A4) para visualizar/imprimir/compartilhar como PDF no celular.
-import { parseSong, wrapRows, rowHasTop, chordParts, isRest, REST_PTS, barLines, rowIsTall, sectionLengths, COVER_STEPS, coverOpts, viewOf, staffBarWidth, voiceLines } from '@tectune/core';
+import { songCols, parseSong, wrapRows, rowHasTop, chordParts, isRest, REST_PTS, barLines, rowIsTall, sectionLengths, COVER_STEPS, coverOpts, viewOf, staffBarWidth, voiceLines } from '@tectune/core';
 
 // igual ao web: fonte menor → folha em colunas (os compassos não achatam)
 const pageColumns = s => (s < 0.45 ? 3 : s < 0.75 ? 2 : 1);
@@ -50,6 +50,7 @@ function bar(b, pauta, pos = {}) {
 
 function songHTML(content, cols, scalePct, footer) {
   const song = parseSong(content); const m = song.meta;
+  cols = songCols(song, cols); // compassos por linha: da música
   const s = (scalePct > 0 ? scalePct : 100) / 100;
   const metas = [['TOM', m.key], ['BPM', m.bpm], ['COMPASSO', m.time && song.meter.label], ['CAPO', m.capo]].filter(x => x[1]);
   const pc = pageColumns(s);

@@ -6,7 +6,7 @@ import {
   keyChords, usedChords, setBarChords, addBarChord, insertBarAfter, appendBar, deleteBar, toggleRepeatStart, toggleRepeatEnd,
   setRepeatTimes, setBarEnding, setBarNote, setBarLyric, barLyric, appendSection,
   setMeta, renameSection, setSectionTimes, duplicateSection, moveSection, deleteSection,
-  barPlays, barLyricPasses, setBarLyricPass,
+  barPlays, barLyricPasses, setBarLyricPass, songCols,
 } from '/core/index.js';
 import { resolveCoverScale } from './cifra.js';
 
@@ -131,7 +131,7 @@ $('songPrev').onclick = () => openSong(cur - 1);
 $('songNext').onclick = () => openSong(cur + 1);
 function openSong(i) {
   if (!sl || i < 0 || i >= sl.songs.length) return;
-  cur = i; selBar = null; undo.length = 0;
+  cur = i; selBar = null; undo.length = 0; lyrArmed = null;
   if (document.body.dataset.view !== 'song') go('song'); else { renderAll(); document.querySelector('.appmain').scrollTop = 0; }
 }
 
@@ -179,9 +179,9 @@ function openSetlistDialog(mode) {
   dlgMode = mode;
   const f = $('formSetlist');
   $('dlgSetlistTitle').textContent = mode === 'new' ? 'Novo show' : 'Editar show';
-  const d = mode === 'edit' && sl ? sl : { name: '', event_date: '', venue: '', notes: '', cols: 4 };
+  const d = mode === 'edit' && sl ? sl : { name: '', event_date: '', venue: '', notes: '' };
   f.name.value = d.name || ''; f.event_date.value = d.event_date || '';
-  f.venue.value = d.venue || ''; f.notes.value = d.notes || ''; f.cols.value = String(d.cols || 4);
+  f.venue.value = d.venue || ''; f.notes.value = d.notes || '';
   const del = $('slDelete'); del.style.display = mode === 'edit' ? '' : 'none';
   del.classList.remove('armed'); del.textContent = 'Excluir show';
   $('dlgSetlist').showModal(); f.name.focus();
@@ -191,7 +191,7 @@ $('slEdit').onclick = () => sl && openSetlistDialog('edit');
 $('formSetlist').addEventListener('submit', async e => {
   e.preventDefault();
   const f = e.target;
-  const body = { name: f.name.value.trim(), event_date: f.event_date.value || null, venue: f.venue.value.trim() || null, notes: f.notes.value.trim() || null, cols: +f.cols.value };
+  const body = { name: f.name.value.trim(), event_date: f.event_date.value || null, venue: f.venue.value.trim() || null, notes: f.notes.value.trim() || null };
   if (!body.name) { f.name.focus(); return; }
   try {
     if (dlgMode === 'new') {
@@ -487,7 +487,7 @@ function renderSongView() {
   $('issuesSum').innerHTML = !s ? '' : (ne || nw)
     ? `${ne ? `<button type="button" class="e" data-code>${ne} ${ne === 1 ? 'erro' : 'erros'}</button>` : ''} ${nw ? `<button type="button" class="w" data-code>${nw} ${nw === 1 ? 'aviso' : 'avisos'}</button>` : ''}`
     : '<span class="ok"><svg aria-hidden="true"><use href="#i-check"/></svg>Sem erros de compasso</span>';
-  renderViewToggle(); renderStruct(); renderDock(); renderInspector();
+  renderViewToggle(); renderStruct(); renderDock(); renderInspector(); renderLyrics();
 }
 $('issuesSum').addEventListener('click', e => { if (e.target.closest('[data-code]')) setMode('code'); });
 
@@ -523,6 +523,7 @@ function renderIssues() {
 }
 $('issues').addEventListener('click', e => { const li = e.target.closest('li[data-line]'); if (li) gotoLine(+li.dataset.line); });
 $('sheet').addEventListener('click', e => {
+  if (lyrArmed != null && placeArmed(e)) return; // encaixando a letra: o toque no compasso recebe o trecho
   const add = e.target.closest('.addbar'); if (add) { selectBar('+' + add.dataset.sec); $('chordIn').focus(); return; }
   const ly = e.target.closest('.ly[data-k]'); if (ly) { player.seekStep(+ly.dataset.k); return; } // linha da letra: começa dali
   const b = e.target.closest('.bar[data-line]'); if (!b) return;
@@ -547,7 +548,7 @@ function renderPreview() {
   sheet.style.setProperty('--s', k); sheet.style.setProperty('--hs', Math.min(1, 0.55 + 0.45 * k));
   sheet.classList.remove('tiny', 'pc2', 'pc3');
   const cantor = palco && showView === 'cantor';
-  sheet.innerHTML = cantor ? lyricsHTML(s.content) : sheetHTML(s.content, sl.cols);
+  sheet.innerHTML = cantor ? lyricsHTML(s.content) : sheetHTML(s.content, sl.cols, screenMaxCols());
   if (!cantor) { decorateSheet(); fitSlots(); }
   renderShowBar();
   // play: mesma música → mantém a posição; outra música → recomeça
@@ -560,6 +561,8 @@ function renderPreview() {
   badge.title = pages > 1 && fs === 0 ? 'Mesmo no tamanho mínimo não coube em uma folha' : '';
 }
 // cor de cada seção, compasso selecionado e o "+ compasso" no fim de cada seção
+// no celular, 6 ou 8 compassos por linha ficam ilegíveis: a tela usa no máximo 4 (o PDF segue a música)
+const screenMaxCols = () => ((($('pScroll').clientWidth || innerWidth) < 640) ? 4 : 8);
 function decorateSheet() {
   const s = curSong(); const song = parseSong(s.content);
   if (!song.sections.length) {
@@ -593,7 +596,7 @@ function decorateSheet() {
     btn.innerHTML = '<svg aria-hidden="true"><use href="#i-plus"/></svg>compasso';
     const rows = el.querySelectorAll(':scope > .row, :scope > .srow');
     if (rows.length) rows[rows.length - 1].appendChild(btn);
-    else { const r = document.createElement('div'); r.className = 'row'; r.style.setProperty('--cols', sl.cols); r.appendChild(btn); el.appendChild(r); }
+    else { const r = document.createElement('div'); r.className = 'row'; r.style.setProperty('--cols', Math.min(songCols(song, sl.cols), screenMaxCols())); r.appendChild(btn); el.appendChild(r); }
   });
   markSel();
 }
@@ -766,7 +769,7 @@ document.addEventListener('keydown', e => {
     if (e.key === '-') { e.preventDefault(); putChord('-'); return; }
     if (e.key === 'Enter') { e.preventDefault(); $('chordIn').focus(); return; }
     if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); delBar(); return; }
-    if (e.key === 'Escape') { selectBar(null); return; }
+    if (e.key === 'Escape') { if (lyrArmed != null) armLyric(null); else selectBar(null); return; }
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); moveSel(e.key === 'ArrowRight' ? 1 : -1); return; }
   }
   if (e.key === ' ') { e.preventDefault(); if (t && t.tagName === 'BUTTON') t.blur(); playToggle(); }
@@ -917,6 +920,93 @@ function renderInspector() {
   $('barTimesL').style.opacity = b.end ? 1 : .4;
   renderPasses(sg);
 }
+/* ---------------- letra inteira: colar uma vez, depois apontar cada trecho no compasso ---------------- */
+// cada linha não vazia da letra é um trecho; linha em branco separa estrofes; "[Refrão]" vira rótulo
+let lyrArmed = null; // índice (em lyricItems) do trecho que vai para o próximo compasso tocado
+function lyricItems(raw) {
+  const out = []; let gap = false;
+  for (const l of String(raw || '').split('\n')) {
+    const t = l.replace(/\s+/g, ' ').trim();
+    if (!t) { gap = out.length > 0; continue; }
+    const lab = t.match(/^\[(.+)\]$/);
+    out.push({ kind: lab ? 'label' : 'line', text: lab ? lab[1] : t, gap }); gap = false;
+  }
+  return out;
+}
+// onde cada trecho já está na cifra (pela letra dos compassos), contando repetições da mesma frase
+function lyricPlacement(sg, items) {
+  const where = new Map(); // texto → [rótulos dos compassos]
+  sg.sections.forEach(sec => sec.rows.flat().forEach((b, bi) => {
+    const v = b.voice; if (!v) return;
+    const texts = [v.text, ...Object.values(v.passes || {})].filter(Boolean).flatMap(t => t.split(' / '));
+    for (const t of texts) { const k = t.trim(); if (!where.has(k)) where.set(k, []); where.get(k).push(`${sec.name || 'Seção'} · ${bi + 1}`); }
+  }));
+  const seen = new Map();
+  return items.map(it => {
+    if (it.kind !== 'line') return null;
+    const n = (seen.get(it.text) || 0); seen.set(it.text, n + 1);
+    return (where.get(it.text) || [])[n] || null;
+  });
+}
+function renderLyrics() {
+  const s = curSong(); const list = $('lyrList');
+  if (!s) { list.innerHTML = ''; return; }
+  const items = lyricItems(s.lyrics); const sg = parseSong(s.content); const at = lyricPlacement(sg, items);
+  const lines = items.filter(i => i.kind === 'line').length, placed = at.filter(Boolean).length;
+  $('lyrEmpty').hidden = lines > 0;
+  $('lyrEdit').textContent = lines ? 'Editar' : 'Colar a letra';
+  $('lyrCount').textContent = lines ? `${placed} de ${lines} encaixados` : '';
+  $('lyrOpen').classList.toggle('done', lines > 0 && placed === lines);
+  if (lyrArmed != null && (!items[lyrArmed] || items[lyrArmed].kind !== 'line')) lyrArmed = null;
+  list.innerHTML = items.map((it, i) => it.kind === 'label'
+    ? `<li class="lab${it.gap ? ' gap' : ''}">${esc(it.text)}</li>`
+    : `<li class="${it.gap ? 'gap' : ''}"><button type="button" data-ly="${i}" class="${at[i] ? 'placed' : ''}${lyrArmed === i ? ' armed' : ''}" aria-pressed="${lyrArmed === i}">
+        <span class="lt">${esc(it.text)}</span>${at[i] ? `<small>${esc(at[i])}</small>` : '<small class="todo">encaixar</small>'}</button></li>`).join('');
+  const arm = $('lyrArm');
+  arm.hidden = lyrArmed == null || isPalco() || !isAdmin() || document.body.classList.contains('code');
+  if (!arm.hidden) $('lyrArmText').textContent = items[lyrArmed].text;
+  document.body.classList.toggle('lyrmode', !arm.hidden);
+}
+function armNext(from, sg, items) {
+  const at = lyricPlacement(sg, items);
+  for (let i = from + 1; i < items.length; i++) if (items[i].kind === 'line' && !at[i]) return i;
+  for (let i = 0; i <= from && i < items.length; i++) if (items[i].kind === 'line' && !at[i]) return i;
+  return null;
+}
+function armLyric(i) {
+  lyrArmed = i; renderLyrics();
+  if (i != null && document.body.classList.contains('code')) setMode('visual');
+}
+// toque no compasso com um trecho armado: a letra vai para ele e o próximo trecho já fica armado
+function placeArmed(e) {
+  const b = e.target.closest('.bar[data-id]'); if (!b || isPalco()) return false;
+  const s = curSong(); const items = lyricItems(s.lyrics); const it = items[lyrArmed]; if (!it) return false;
+  const sg = parseSong(s.content);
+  const r = setBarLyric(s.content, b.dataset.id, sg, it.text);
+  const next = armNext(lyrArmed, parseSong(r.text), items);
+  lyrArmed = next;
+  applyEdit({ text: r.text, id: b.dataset.id });
+  if (next == null) toast('Letra toda encaixada');
+  return true;
+}
+$('lyrList').addEventListener('click', e => { const b = e.target.closest('[data-ly]'); if (!b) return; const i = +b.dataset.ly; armLyric(lyrArmed === i ? null : i); });
+$('lyrSkip').onclick = () => { const s = curSong(); const items = lyricItems(s.lyrics); armLyric(armNext(lyrArmed, parseSong(s.content), items)); };
+$('lyrStop').onclick = () => armLyric(null);
+function openLyrics() { const s = curSong(); if (!s) return; $('lyrText').value = s.lyrics || ''; $('dlgLyrics').showModal(); $('lyrText').focus(); }
+$('lyrEdit').onclick = openLyrics;
+$('lyrOpen').onclick = () => { const s = curSong(); if (s && lyricItems(s.lyrics).some(i => i.kind === 'line')) { const n = armNext(-1, parseSong(s.content), lyricItems(s.lyrics)); if (n != null) { armLyric(n); return; } } openLyrics(); };
+$('formLyrics').addEventListener('submit', async e => {
+  e.preventDefault();
+  const s = curSong(); if (!s) return;
+  const v = $('lyrText').value.replace(/\r\n?/g, '\n');
+  $('dlgLyrics').close();
+  s.lyrics = v;
+  const items = lyricItems(v);
+  armLyric(armNext(-1, parseSong(s.content), items));
+  try { await api('PUT', '/songs/' + s.id, { lyrics: v }); }
+  catch (err) { toast('Não consegui salvar a letra: ' + err.message); }
+});
+
 // [1,2,3] → "1-3"; [1,3] → "1,3"
 function endingSpec(p) {
   if (!p || !p.length) return '';
@@ -1188,7 +1278,7 @@ function renderEditor() {
   ta.disabled = !s; ta.value = s ? s.content : '';
   ['btnPdfSong', 'scale'].forEach(id => { $(id).disabled = !s; });
   $('scale').value = String(s?.font_scale ?? 100);
-  $('cols').disabled = !sl; $('cols').value = String(sl?.cols || 4);
+  $('cols').disabled = !s; $('cols').value = String(s ? songCols(parseSong(s.content), sl?.cols) : 4);
 }
 function renderAll() {
   renderEditor();
@@ -1237,7 +1327,8 @@ function renderViewToggle() {
   const s = curSong(); const pauta = !!s && viewOf(parseSong(s.content)) === 'pauta';
   $('vBox').disabled = $('vStaff').disabled = !s || !isAdmin();
   $('vBox').classList.toggle('on', !!s && !pauta); $('vStaff').classList.toggle('on', pauta);
-  $('cols').disabled = !sl || pauta || !isAdmin();
+  $('cols').disabled = !s || pauta || !isAdmin();
+  if (s) $('cols').value = String(songCols(parseSong(s.content), sl?.cols));
   $('cols').title = pauta ? 'Na pauta cada compasso tem a largura das suas cifras e as linhas quebram sozinhas' : '';
 }
 $('vBox').onclick = () => setView('caixas');
@@ -1253,12 +1344,8 @@ $('scale').addEventListener('change', async () => {
   try { await api('PUT', '/songs/' + s.id, { font_scale: v }); }
   catch (err) { toast('Não consegui salvar o tamanho: ' + err.message); }
 });
-$('cols').addEventListener('change', async () => {
-  if (!sl) return;
-  const cols = +$('cols').value;
-  try { const upd = await api('PATCH', '/setlists/' + sl.id, { cols }); sl.cols = upd.cols; syncSummary(); renderPreview(); }
-  catch (err) { toast(err.message); }
-});
+// compassos por linha: é da música (grava "colunas: 6" no cabeçalho da cifra)
+$('cols').addEventListener('change', () => editMeta('cols', $('cols').value));
 
 /* ---------------- PDF ---------------- */
 let pdfUrl = null;

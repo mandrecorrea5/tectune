@@ -104,3 +104,17 @@ test('link do show', async t => {
     assert.equal((await call('GET', `/public/shows/${tok}`)).status, 404);
   });
 });
+
+test('letra inteira da música', async () => {
+  const a = await account('Letrista');
+  a.band = (await call('GET', '/me', null, a)).body.bands[0].id;
+  const s = await call('POST', '/songs', { content: 'título: L\n[A]\n| G |', lyrics: 'linha 1\r\nlinha 2' }, a);
+  assert.equal(s.status, 201); assert.equal(s.body.lyrics, 'linha 1\nlinha 2');
+  const before = s.body.updated_at;
+  const u = await call('PUT', `/songs/${s.body.id}`, { lyrics: 'nova letra' }, a);
+  assert.equal(u.status, 200); assert.equal(u.body.lyrics, 'nova letra'); assert.equal(u.body.updated_at, before);
+  assert.equal((await call('PUT', `/songs/${s.body.id}`, { lyrics: 5 }, a)).status, 400);
+  const sl = await call('POST', '/setlists', { name: 'L' }, a);
+  await call('PUT', `/setlists/${sl.body.id}/songs`, { songIds: [s.body.id] }, a);
+  assert.equal((await call('GET', `/setlists/${sl.body.id}`, null, a)).body.songs[0].lyrics, 'nova letra');
+});

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { appendSection, parseSong, transposeText, validateSong } from '@tectune/core';
+import { songCols, appendSection, parseSong, transposeText, validateSong } from '@tectune/core';
 import { useData } from '../../lib/store';
 import Sheet from '../../components/Sheet';
 import { Button, Empty } from '../../components/ui';
@@ -74,7 +74,7 @@ export default function Edit() {
   );
   const preview = (
     <ScrollView contentContainerStyle={{ padding: 12 }} onLayout={e => setWidth(e.nativeEvent.layout.width - 24)} testID="song-preview">
-      <Sheet song={parsed} cols={4} width={width} />
+      <Sheet song={parsed} cols={songCols(parsed, 4)} width={width} />
     </ScrollView>
   );
 

@@ -192,3 +192,15 @@ test('letra por passada: lê, escreve e não mexe na letra geral', () => {
   t = E.setBarLyric(t, '1:0', p, 'mudou').text; p = parseSong(t);
   assert.equal(E.barLyric(p, '1:0'), 'mudou'); assert.deepEqual(E.barLyricPasses(p, '1:0'), { 1: 'olá' });
 });
+
+test('compassos por linha ficam na música', async () => {
+  const { songCols, setMeta, validateSong: v } = await import('../src/index.js');
+  const t = 'título: X\ntom: G\n\n[A]\n| G | D |';
+  assert.equal(songCols(parseSong(t)), 4);
+  assert.equal(songCols(parseSong(t), 6), 6); // show antigo com 6
+  const t6 = setMeta(t, 'cols', '6');
+  assert.match(t6, /^colunas: 6$/m);
+  assert.equal(songCols(parseSong(t6), 8), 6);
+  assert.equal(parseSong(t6).sections[0].rows.flat().length, 2);
+  assert.equal(v(setMeta(t, 'cols', '5')).length, 1);
+});

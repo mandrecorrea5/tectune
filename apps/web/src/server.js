@@ -78,6 +78,12 @@ function scaleInput(v) {
   if (!Number.isInteger(n) || !(n === 0 || (n >= 30 && n <= 100))) throw new HttpError(400, 'font_scale deve ser 0 (automático) ou de 30 a 100');
   return n;
 }
+const MAX_LYRICS = 50_000;
+function lyricsInput(v) {
+  if (typeof v !== 'string') throw new HttpError(400, '"lyrics" (letra) deve ser texto');
+  if (v.length > MAX_LYRICS) throw new HttpError(413, 'Letra muito grande');
+  return v.replace(/\r\n?/g, '\n');
+}
 function contentInput(body) {
   if (typeof body.content !== 'string') throw new HttpError(400, 'Campo "content" (texto da cifra) é obrigatório');
   if (body.content.length > MAX_CONTENT) throw new HttpError(413, 'Cifra muito grande');
@@ -127,7 +133,7 @@ async function getSetlist(id, band) {
   const { rows } = await pool.query(`SELECT ${SETLIST_COLS} FROM setlists s WHERE s.id = $1 AND s.band_id = $2`, [id, band]);
   if (!rows.length) throw new HttpError(404, 'Setlist não encontrada');
   const songs = await pool.query(`
-    SELECT ss.id AS entry_id, ss.position, so.id, so.title, so.artist, so.song_key, so.bpm, so.font_scale, so.content, so.updated_at
+    SELECT ss.id AS entry_id, ss.position, so.id, so.title, so.artist, so.song_key, so.bpm, so.font_scale, so.content, so.lyrics, so.updated_at
     FROM setlist_songs ss JOIN songs so ON so.id = ss.song_id
     WHERE ss.setlist_id = $1 ORDER BY ss.position, ss.id`, [id]);
   return { ...rows[0], songs: songs.rows };
@@ -219,10 +225,11 @@ app.get('/api/songs', wrap(async (req, res) => {
 app.post('/api/songs', wrap(async (req, res) => {
   const content = contentInput(req.body);
   const scale = req.body.font_scale === undefined ? 100 : scaleInput(req.body.font_scale);
+  const lyrics = req.body.lyrics === undefined ? '' : lyricsInput(req.body.lyrics);
   const m = extractMeta(content);
   const { rows } = await pool.query(
-    `INSERT INTO songs (title, artist, song_key, bpm, content, font_scale, band_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-    [m.title, m.artist, m.song_key, m.bpm, content, scale, req.band]);
+    `INSERT INTO songs (title, artist, song_key, bpm, content, font_scale, band_id, lyrics) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    [m.title, m.artist, m.song_key, m.bpm, content, scale, req.band, lyrics]);
   res.status(201).json(rows[0]);
 }));
 
@@ -234,7 +241,7 @@ app.get('/api/songs/:id', wrap(async (req, res) => {
 
 app.put('/api/songs/:id', wrap(async (req, res) => {
   const id = checkId(req.params.id);
-  // aceita { content }, { font_scale } ou os dois
+  // aceita { content }, { font_scale }, { lyrics } (letra inteira) ou combinações
   const sets = [], vals = [id, req.band];
   const add = (col, v) => { vals.push(v); sets.push(`${col} = $${vals.length}`); };
   if (req.body.content !== undefined) {
@@ -243,9 +250,11 @@ app.put('/api/songs/:id', wrap(async (req, res) => {
     add('title', m.title); add('artist', m.artist); add('song_key', m.song_key); add('bpm', m.bpm); add('content', content);
   }
   if (req.body.font_scale !== undefined) add('font_scale', scaleInput(req.body.font_scale));
-  if (!sets.length) throw new HttpError(400, 'Envie "content" e/ou "font_scale"');
+  const touch = sets.length > 0; // só a letra colada não conta como edição da cifra (a sincronização compara updated_at)
+  if (req.body.lyrics !== undefined) add('lyrics', lyricsInput(req.body.lyrics));
+  if (!sets.length) throw new HttpError(400, 'Envie "content", "font_scale" e/ou "lyrics"');
   const { rows } = await pool.query(
-    `UPDATE songs SET ${sets.join(', ')}, updated_at = now() WHERE id = $1 AND band_id = $2 RETURNING *`, vals);
+    `UPDATE songs SET ${sets.join(', ')}${touch ? ', updated_at = now()' : ''} WHERE id = $1 AND band_id = $2 RETURNING *`, vals);
   if (!rows.length) throw new HttpError(404, 'Música não encontrada');
   res.json(rows[0]);
 }));

@@ -6,7 +6,7 @@ import { BackHandler, Pressable, ScrollView, StyleSheet, Text, TextInput, View }
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { parseSong, buildTimeline, barSeconds, pulseInfo, parseBpm, transposeText, viewOf, lyricEvents } from '@tectune/core';
+import { songCols, parseSong, buildTimeline, barSeconds, pulseInfo, parseBpm, transposeText, viewOf, lyricEvents } from '@tectune/core';
 import { useData } from '../lib/store';
 import { getDb, kvGet, kvSet } from '../lib/db';
 import { useLive } from '../lib/live';
@@ -236,7 +236,8 @@ export default function Show() {
   if (!song) return <Empty title="Música não encontrada" text="Sincronize novamente." />;
 
   const m = parsed.meta;
-  const autoCols = width && width < 600 ? Math.min(4, sl.cols || 4) : (sl.cols || 4);
+  const songC = songCols(parsed, sl.cols); // compassos por linha: da música
+  const autoCols = width && width < 600 ? Math.min(4, songC) : songC;
   const cols = colsPref || autoCols;
   const secName = timeline[step] ? parsed.sections[timeline[step].sec]?.name : '';
   const next = ids[idx + 1] ? parseSong(songs[ids[idx + 1]]?.content || '').meta.title : null;

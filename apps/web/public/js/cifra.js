@@ -1,5 +1,5 @@
 // Prévia em HTML e geração do PDF (web). A lógica da cifra vem do núcleo compartilhado.
-import { norm, esc, parseSong, wrapRows, rowHasTop, chordParts, isRest, REST_PTS, barLines, rowIsTall, sectionLengths, COVER_LAYOUTS, COVER_STEPS, coverOpts, viewOf, staffBarWidth, flowStaff, buildTimeline, lyricEvents, voiceLines } from '/core/index.js';
+import { songCols, norm, esc, parseSong, wrapRows, rowHasTop, chordParts, isRest, REST_PTS, barLines, rowIsTall, sectionLengths, COVER_LAYOUTS, COVER_STEPS, coverOpts, viewOf, staffBarWidth, flowStaff, buildTimeline, lyricEvents, voiceLines } from '/core/index.js';
 export { norm, esc, parseSong, transposeText, validateSong, meterOf, layoutBar, isRest, viewOf } from '/core/index.js';
 
 const REST_SVG = `<svg viewBox="0 0 12 28" aria-label="pausa"><polyline points="${REST_PTS.map(p => p.map(v => +v.toFixed(2)).join(',')).join(' ')}" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -70,8 +70,10 @@ export function lyricsHTML(text) {
   return h + '</div>';
 }
 
-export function sheetHTML(text, cols) {
+export function sheetHTML(text, cols, maxCols = 8) {
   const song = parseSong(text); const m = song.meta;
+  // compassos por linha: da música (o do show só vale para músicas antigas); tela estreita limita (celular: 4)
+  cols = Math.min(songCols(song, cols), maxCols);
   const timeLabel = m.time ? (song.meter.invalid ? m.time : song.meter.label) : null;
   const metas = [['TOM', m.key], ['BPM', m.bpm], ['COMPASSO', timeLabel], ['CAPO', m.capo]].filter(x => x[1]);
   let h = `<div class="ph"><div><h1>${esc(m.title || 'Sem título')}</h1>${m.artist ? `<div class="artist">${esc(m.artist)}</div>` : ''}</div>
@@ -324,6 +326,7 @@ function footer(doc, left, right) {
 
 function drawSong(doc, text, cols, footLeft, footRight, s = 1) {
   const song = parseSong(text);
+  cols = songCols(song, cols);
   const m = song.meta; const title = m.title || 'Sem título';
   const hs = 0.55 + 0.45 * s; // o cabeçalho encolhe menos que a grade
   let y = M;

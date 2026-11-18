@@ -663,6 +663,30 @@ dialog.tour[open]{display:flex}
 .ta-live b{flex:1;display:flex;align-items:center;font-size:62px;font-weight:800;letter-spacing:-.04em}
 .ta-beats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.ta-beats i{height:9px;border-radius:5px;background:rgba(20,10,3,.22)}.ta-beats i.on{background:var(--accentInk)}
 
+
+/* ---------- letra: colar e encaixar ---------- */
+.lyropen{height:40px}
+.lyropen.done{border-color:#1E4A40;color:var(--ok)}
+.lyrlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:420px;overflow-y:auto}
+.lyrlist li.gap{margin-top:10px}
+.lyrlist li.lab{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:2px 4px}
+.lyrlist button{width:100%;height:auto;min-height:44px;padding:8px 10px;justify-content:space-between;align-items:center;gap:10px;text-align:left;white-space:normal;background:var(--bg);border-color:var(--line);font-weight:600}
+.lyrlist .lt{flex:1;min-width:0;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.lyrlist small{flex:none;font-size:11.5px;font-weight:700;color:var(--ok)}
+.lyrlist small.todo{color:var(--muted);font-weight:600}
+.lyrlist button.placed .lt{color:var(--muted)}
+.lyrlist button.armed{border:2px solid var(--accent);background:var(--accentBg)}
+.lyrlist button.armed .lt{color:var(--ink)}
+.lyrarm{position:sticky;bottom:calc(14px + var(--dockH, 0px));margin:0 28px;z-index:8;display:flex;align-items:center;gap:8px;padding:10px 10px 10px 16px;border-radius:16px;background:var(--accent);color:var(--accentInk);box-shadow:0 14px 40px rgba(0,0,0,.55)}
+.lyrarmtext{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.lyrarmtext small{font-size:11.5px;font-weight:800;letter-spacing:.02em;opacity:.85}
+.lyrarmtext b{font-size:16px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.lyrarm button{color:var(--accentInk);border-color:transparent;background:rgba(0,0,0,.08);font-weight:800}
+.lyrarm button:hover:not(:disabled){background:rgba(0,0,0,.16);border-color:transparent}
+body.lyrmode .dock{display:none}
+body.lyrmode .bar{cursor:copy}
+body.lyrmode .bar:hover{border-color:var(--accent) !important;background-color:#2A1D14}
+
 /* =====================================================================
    Tablet e celular
    ===================================================================== */
@@ -779,6 +803,10 @@ dialog.tour[open]{display:flex}
   body.palco .scroll{padding:10px 12px 40vh}
   .lyline{font-size:calc(26px * var(--s, 1))}
   .phone-only{display:flex !important}
+  .lyrarm{margin:0 8px;bottom:8px;padding:8px 8px 8px 12px}
+  .lyrarmtext b{font-size:15px}
+  .lyropen span{display:none}
+  .lyropen{width:40px;padding:0}
   .desk-only{display:none !important}
   dialog.sheet{margin:auto 0 0;width:100vw;max-width:100vw;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));max-height:92dvh}
   dialog.tour{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:0;margin:0}

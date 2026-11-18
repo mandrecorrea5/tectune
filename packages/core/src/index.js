@@ -10,11 +10,17 @@ export const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': 
 const META = { titulo: 'title', title: 'title', musica: 'title', artista: 'artist', banda: 'artist', autor: 'artist',
   tom: 'key', key: 'key', bpm: 'bpm', andamento: 'bpm', compasso: 'time', formula: 'time', capo: 'capo',
   obs: 'notes', observacao: 'notes', observacoes: 'notes', notas: 'notes',
-  formato: 'view', visual: 'view', visualizacao: 'view', notacao: 'view' };
+  formato: 'view', visual: 'view', visualizacao: 'view', notacao: 'view', colunas: 'cols' };
 import { melodyInfo, assignVocals, transposeMelody } from './staff.js';
 export * from './staff.js';
 /** Visualização da música: 'pauta' (cifras dentro do pentagrama) ou 'caixas' (padrão). */
 export const viewOf = song => (/^(pauta|partitura|pentagrama|staff)/.test(norm(song.meta.view || '')) ? 'pauta' : 'caixas');
+/** Compassos por linha da música (cabeçalho "colunas: 6"); sem isso, `fallback` (o antigo valor do show) ou 4. */
+export const COLS = [4, 6, 8];
+export function songCols(song, fallback = 4) {
+  const n = parseInt(song?.meta?.cols, 10);
+  return COLS.includes(n) ? n : COLS.includes(+fallback) ? +fallback : 4;
+}
 export const CH = /^([A-G](?:#|b)?)([^\/]*)(?:\/([A-G](?:#|b)?))?$/;
 
 function parseRow(line, lineNo) {
@@ -177,6 +183,7 @@ export function parseSong(text) {
 export function validateSong(text) {
   const song = typeof text === 'string' ? parseSong(text) : text;
   const issues = [];
+  if (song.meta.cols && !COLS.includes(parseInt(song.meta.cols, 10))) issues.push({ line: song.metaLines.cols || 1, level: 'warn', where: 'Cabeçalho', msg: `colunas: ${song.meta.cols} — use 4, 6 ou 8 compassos por linha` });
   if (song.meter.invalid) issues.push({ line: song.metaLines.time || 1, level: 'error', where: 'Cabeçalho', msg: `Compasso "${song.meta.time}" não reconhecido (use 4/4, 3/4, 6/8…). Usando 4/4.` });
   for (const s of song.sections) {
     let n = 0;

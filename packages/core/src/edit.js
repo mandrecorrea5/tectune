@@ -285,8 +285,9 @@ const nrm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const META_KEYS = {
   title: ['titulo', 'title', 'musica'], artist: ['artista', 'banda', 'autor'], key: ['tom', 'key'],
   bpm: ['bpm', 'andamento'], time: ['compasso', 'formula'], notes: ['obs', 'observacao', 'observacoes', 'notas'],
+  cols: ['colunas'],
 };
-const META_LABEL = { title: 'título', artist: 'artista', key: 'tom', bpm: 'bpm', time: 'compasso', notes: 'obs' };
+const META_LABEL = { cols: 'colunas', title: 'título', artist: 'artista', key: 'tom', bpm: 'bpm', time: 'compasso', notes: 'obs' };
 // onde termina o cabeçalho: na primeira seção, compasso ou letra
 function headerEnd(lines) {
   const i = lines.findIndex(l => /^\s*\[/.test(l) || l.includes('|') || /^\s*(voz|letra|canta|vocal)\b/i.test(l));
