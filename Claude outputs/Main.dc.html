@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Tectune — Estúdio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0D0C}
+a{color:#FF7A2F}a:hover{color:#FFA16B}
+button{font-family:inherit;cursor:pointer}
+.staff{background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 11px,#2A2724 11px,#2A2724 12px);background-size:100% 60px;background-position:0 18px;background-repeat:no-repeat}
+.chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:64px;height:56px;padding:0 12px;border-radius:12px;border:1px solid #34302B;background:#201E1B;color:#F4F0EA}
+.chip:hover{border-color:#FF7A2F;background:#2A221C}
+.tool{display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;border-radius:10px;border:1px solid #2E2B27;background:transparent;color:#D8D2C8;font-size:13px;font-weight:600}
+.tool:hover{background:#201E1B;color:#F4F0EA}
+.bar:hover{border-color:#5A534B !important}
+.railbtn{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#A39C92;background:transparent;border:0;text-decoration:none}
+.railbtn:hover{background:#201E1B;color:#F4F0EA}
+@media (max-width:760px){.rail{flex-direction:row !important;max-width:none !important;height:64px;justify-content:space-between}}
+</style>
+</helmet>
+<div style="min-height: 1720px; display: flex; flex-wrap: wrap; background: #0E0D0C; color: #F4F0EA; font-family: Archivo, system-ui, sans-serif">
+
+  <!-- trilho lateral -->
+  <nav class="rail" aria-label="Navegação" style="flex: 1 1 72px; max-width: 72px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 0; border-right: 1px solid #22201D; background: #0B0A09; box-sizing: border-box">
+    <div aria-label="Tectune" role="img" style="width: 28px; height: 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; margin-bottom: 16px">
+      <span style="background: #F4F0EA; border-radius: 3px"></span><span style="background: #FF7A2F; border-radius: 3px"></span><span style="background: #F4F0EA; border-radius: 3px"></span><span style="background: #F4F0EA; border-radius: 3px"></span>
+    </div>
+    <a class="railbtn" href="Setlist.dc.html" aria-label="Shows e setlists"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></a>
+    <button class="railbtn" type="button" aria-label="Biblioteca de músicas" style="background: #201E1B; color: #F4F0EA"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
+    <button class="railbtn" type="button" aria-label="Banda"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.6 3 5.2"/></svg></button>
+    <span style="flex: 1"></span>
+    <span aria-label="Marcos Correa" role="img" style="width: 36px; height: 36px; border-radius: 50%; background: #FF7A2F; color: #1A0E05; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px">MC</span>
+  </nav>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+
+    <!-- topo -->
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 28px; border-bottom: 1px solid #22201D">
+      <a href="Setlist.dc.html" style="color: #A39C92; text-decoration: none; font-size: 14px; font-weight: 500">Casamento Ana &amp; Pedro</a>
+      <span aria-hidden="true" style="color: #5A534B">/</span>
+      <span style="font-size: 14px; font-weight: 600">4 de 12</span>
+      <span style="flex: 1"></span>
+      <button type="button" style="display: flex; align-items: center; gap: 10px; height: 40px; min-width: 260px; padding: 0 14px; border-radius: 10px; border: 1px solid #2E2B27; background: #171614; color: #A39C92; font-size: 13.5px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        Buscar música ou comando
+        <span style="flex: 1"></span>
+        <kbd style="font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 2px 6px; border-radius: 6px; background: #22201D; color: #D8D2C8">⌘K</kbd>
+      </button>
+      <div aria-label="Na música agora: Júlia, Rafa e mais 2" role="img" style="display: flex; align-items: center">
+        <span style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #0E0D0C; background: #3DD6B5; color: #06231C; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center">JU</span>
+        <span style="width: 32px; height: 32px; margin-left: -8px; border-radius: 50%; border: 2px solid #0E0D0C; background: #8FA8FF; color: #0B1433; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center">RA</span>
+        <span style="width: 32px; height: 32px; margin-left: -8px; border-radius: 50%; border: 2px solid #0E0D0C; background: #2E2B27; color: #F4F0EA; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">+2</span>
+      </div>
+      <a href="Setlist.dc.html" style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #3A3530; color: #F4F0EA; text-decoration: none; font-size: 14px; font-weight: 700">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+        Compartilhar
+      </a>
+      <a href="Palco.dc.html" style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 10px; background: #FF7A2F; color: #1A0E05; text-decoration: none; font-size: 14px; font-weight: 800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+        Tocar
+      </a>
+    </header>
+
+    <!-- cabeçalho da música -->
+    <section style="padding: 32px 28px 20px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 24px">
+      <div style="flex: 1 1 360px; min-width: 0">
+        <p style="margin: 0 0 6px; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #A39C92">Jorn</p>
+        <h1 style="margin: 0; font-size: 44px; line-height: 1.05; font-weight: 800; letter-spacing: -.025em">Running Up That Hill</h1>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+        <div style="display: flex; align-items: center; gap: 4px; height: 48px; padding: 0 6px; border-radius: 12px; background: #171614; border: 1px solid #2E2B27">
+          <button type="button" onClick="{{keyDown}}" aria-label="Descer meio tom" style="width: 36px; height: 36px; border-radius: 8px; border: 0; background: transparent; color: #D8D2C8; font-size: 20px">−</button>
+          <span style="display: flex; flex-direction: column; align-items: center; min-width: 56px">
+            <small style="font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: #A39C92">TOM</small>
+            <b style="font-family: 'JetBrains Mono', monospace; font-size: 18px; color: #FF7A2F">{{key}}</b>
+          </span>
+          <button type="button" onClick="{{keyUp}}" aria-label="Subir meio tom" style="width: 36px; height: 36px; border-radius: 8px; border: 0; background: transparent; color: #D8D2C8; font-size: 20px">+</button>
+        </div>
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 48px; min-width: 72px; border-radius: 12px; background: #171614; border: 1px solid #2E2B27">
+          <small style="font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: #A39C92">BPM</small>
+          <b style="font-family: 'JetBrains Mono', monospace; font-size: 18px">120</b>
+        </div>
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 48px; min-width: 64px; border-radius: 12px; background: #171614; border: 1px solid #2E2B27">
+          <small style="font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: #A39C92">FÓRMULA</small>
+          <b style="font-family: 'JetBrains Mono', monospace; font-size: 18px">4/4</b>
+        </div>
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 48px; min-width: 72px; border-radius: 12px; background: #171614; border: 1px solid #2E2B27">
+          <small style="font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: #A39C92">DURAÇÃO</small>
+          <b style="font-family: 'JetBrains Mono', monospace; font-size: 18px">{{total}}</b>
+        </div>
+      </div>
+    </section>
+
+    <!-- modo -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 0 28px 20px">
+      <div role="group" aria-label="Modo de edição" style="display: flex; padding: 4px; border-radius: 12px; background: #171614; border: 1px solid #2E2B27">
+        <button type="button" onClick="{{toPauta}}" style="{{pautaBtn}}">Pauta</button>
+        <button type="button" onClick="{{toCodigo}}" style="{{codigoBtn}}">Código</button>
+      </div>
+      <span style="font-size: 13px; color: #A39C92">Os dois modos editam a mesma cifra: quem gosta de digitar continua digitando.</span>
+      <span style="flex: 1"></span>
+      <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #A39C92">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3DD6B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7"/></svg>
+        Salvo · sem erros de compasso
+      </span>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; padding: 0 28px 28px; align-items: flex-start">
+
+      <!-- partitura -->
+      <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 28px">
+        <sc-if value="{{isPauta}}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{sections}}" as="sec" hint-placeholder-count="4">
+            <section style="display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span aria-hidden="true" style="{{sec.dot}}"></span>
+                <h2 style="margin: 0; font-size: 15px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase">{{sec.name}}</h2>
+                <sc-if value="{{sec.hasTimes}}" hint-placeholder-val="{{ true }}">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #2A221C; color: #FF9A5C">{{sec.timesLabel}}</span>
+                </sc-if>
+                <span style="font-size: 12.5px; color: #A39C92">{{sec.meta}}</span>
+                <span style="flex: 1; height: 1px; background: #22201D"></span>
+                <button type="button" aria-label="Opções da seção" style="width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: #A39C92; font-size: 18px">⋯</button>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+                <sc-for list="{{sec.bars}}" as="bar" hint-placeholder-count="4">
+                  <button type="button" class="bar staff" onClick="{{bar.pick}}" aria-label="{{bar.aria}}" style="{{bar.box}}">
+                    <span style="position: absolute; top: 6px; left: 10px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #8A8379">{{bar.num}}</span>
+                    <sc-if value="{{bar.casa}}" hint-placeholder-val="{{ false }}">
+                      <span style="position: absolute; top: 0; left: 28px; right: 10px; height: 14px; border-top: 2px solid #F2C14E; border-left: 2px solid #F2C14E; font-size: 10.5px; font-weight: 700; color: #F2C14E; padding-left: 4px; text-align: left; box-sizing: border-box">{{bar.casa}}</span>
+                    </sc-if>
+                    <sc-if value="{{bar.note}}" hint-placeholder-val="{{ false }}">
+                      <span style="position: absolute; top: 5px; right: 10px; font-size: 11px; font-style: italic; color: #FF9A5C">{{bar.note}}</span>
+                    </sc-if>
+                    <sc-if value="{{bar.rs}}" hint-placeholder-val="{{ false }}">
+                      <span aria-hidden="true" style="position: absolute; left: 3px; top: 24px; bottom: 32px; width: 8px; border-left: 3px solid #F4F0EA; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding-left: 3px; box-sizing: border-box"><i style="width: 4px; height: 4px; border-radius: 50%; background: #F4F0EA"></i><i style="width: 4px; height: 4px; border-radius: 50%; background: #F4F0EA"></i></span>
+                    </sc-if>
+                    <sc-if value="{{bar.re}}" hint-placeholder-val="{{ false }}">
+                      <span aria-hidden="true" style="position: absolute; right: 3px; top: 24px; bottom: 32px; width: 8px; border-right: 3px solid #F4F0EA; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; gap: 8px; padding-right: 3px; box-sizing: border-box"><i style="width: 4px; height: 4px; border-radius: 50%; background: #F4F0EA"></i><i style="width: 4px; height: 4px; border-radius: 50%; background: #F4F0EA"></i></span>
+                    </sc-if>
+                    <span style="display: flex; align-items: center; height: 60px; margin-top: 18px; padding: 0 16px; gap: 4px">
+                      <sc-for list="{{bar.chords}}" as="ch" hint-placeholder-count="1">
+                        <span style="{{ch.style}}">{{ch.label}}</span>
+                      </sc-for>
+                    </span>
+                    <span aria-hidden="true" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 6px 16px 0">
+                      <i style="{{bar.tick}}"></i><i style="{{bar.tick}}"></i><i style="{{bar.tick}}"></i><i style="{{bar.tick}}"></i>
+                    </span>
+                    <span style="display: block; min-height: 18px; padding: 6px 16px 8px; font-size: 12px; font-style: italic; color: #B5AEA3; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{bar.lyric}}</span>
+                  </button>
+                </sc-for>
+                <button type="button" aria-label="{{sec.addAria}}" style="min-height: 120px; border-radius: 12px; border: 1.5px dashed #34302B; background: transparent; color: #8A8379; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                  compasso
+                </button>
+              </div>
+            </section>
+          </sc-for>
+          <button type="button" style="height: 56px; border-radius: 12px; border: 1.5px dashed #34302B; background: transparent; color: #D8D2C8; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Nova seção · Verso, Ponte, Solo, Final…
+          </button>
+        </sc-if>
+        <sc-if value="{{isCodigo}}" hint-placeholder-val="{{ false }}">
+          <pre aria-label="Cifra em texto" style="margin: 0; padding: 24px; border-radius: 16px; background: #0B0A09; border: 1px solid #2E2B27; font-family: 'JetBrains Mono', monospace; font-size: 14.5px; line-height: 1.75; color: #E8E2D8; white-space: pre-wrap; min-height: 640px">{{code}}</pre>
+        </sc-if>
+      </main>
+
+      <!-- painel lateral -->
+      <aside style="flex: 1 1 300px; max-width: 360px; display: flex; flex-direction: column; gap: 16px">
+        <div style="padding: 18px; border-radius: 16px; background: #171614; border: 1px solid #2E2B27; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; align-items: baseline; gap: 8px">
+            <h3 style="margin: 0; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #A39C92">Compasso</h3>
+            <span style="font-size: 15px; font-weight: 700">{{sel.where}}</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+            <sc-for list="{{sel.beats}}" as="bt" hint-placeholder-count="4">
+              <div style="height: 52px; border-radius: 10px; background: #201E1B; border: 1px solid #34302B; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
+                <small style="font-size: 10px; color: #8A8379">tempo {{bt.n}}</small>
+                <b style="font-family: 'JetBrains Mono', monospace; font-size: 15px">{{bt.c}}</b>
+              </div>
+            </sc-for>
+          </div>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; font-weight: 600; color: #A39C92">
+            Letra neste compasso
+            <input value="{{sel.lyric}}" onChange="{{onLyric}}" placeholder="Digite o trecho que o cantor canta aqui" style="height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #34302B; background: #0E0D0C; color: #F4F0EA; font: inherit; font-size: 14px; font-weight: 500">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; font-weight: 600; color: #A39C92">
+            Anotação para a banda
+            <input value="{{sel.note}}" placeholder="breque, só bateria, crescendo…" readOnly="{{ true }}" style="height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #34302B; background: #0E0D0C; color: #F4F0EA; font: inherit; font-size: 14px; font-weight: 500">
+          </label>
+        </div>
+
+        <div style="padding: 18px; border-radius: 16px; background: #171614; border: 1px solid #2E2B27; display: flex; flex-direction: column; gap: 12px">
+          <h3 style="margin: 0; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #A39C92">Estrutura</h3>
+          <div aria-hidden="true" style="display: flex; gap: 3px; height: 10px; border-radius: 5px; overflow: hidden">
+            <sc-for list="{{sections}}" as="sec" hint-placeholder-count="4"><span style="{{sec.seg}}"></span></sc-for>
+          </div>
+          <sc-for list="{{sections}}" as="sec" hint-placeholder-count="4">
+            <button type="button" onClick="{{sec.jump}}" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 10px; border-radius: 10px; border: 0; background: transparent; color: #F4F0EA; font-size: 14px; font-weight: 600; text-align: left">
+              <span aria-hidden="true" style="{{sec.dot}}"></span>
+              <span style="flex: 1">{{sec.name}}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #A39C92">{{sec.time}}</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="padding: 16px 18px; border-radius: 16px; border: 1px solid #2E2B27; display: flex; gap: 12px; align-items: flex-start">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3DD6B5" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #C9C2B7">Júlia comentou no <b style="color: #F4F0EA">Refrão</b>: “na 4ª vez entra o coro”. <a href="#">Ver</a></p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- dock de acordes -->
+    <div style="position: sticky; bottom: 16px; margin: auto 28px 16px; padding: 14px 16px; border-radius: 20px; background: #1A1816; border: 1px solid #3A3530; box-shadow: 0 20px 50px rgba(0,0,0,.55); display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+        <span style="font-size: 11.5px; font-weight: 800; letter-spacing: .08em; color: #A39C92; width: 92px">NO TOM DE<br><b style="color: #FF7A2F; font-size: 13px">{{key}}</b></span>
+        <sc-for list="{{dock}}" as="d" hint-placeholder-count="7">
+          <button type="button" class="chip" onClick="{{d.put}}" aria-label="Colocar {{d.c}} no compasso">
+            <small style="font-size: 10.5px; font-weight: 700; color: #A39C92">{{d.deg}}</small>
+            <b style="font-family: 'JetBrains Mono', monospace; font-size: 17px">{{d.c}}</b>
+          </button>
+        </sc-for>
+        <span aria-hidden="true" style="width: 1px; height: 40px; background: #34302B; margin: 0 4px"></span>
+        <sc-for list="{{recent}}" as="d" hint-placeholder-count="3">
+          <button type="button" class="chip" onClick="{{d.put}}" aria-label="Colocar {{d.c}} no compasso" style="border-style: dashed">
+            <small style="font-size: 10.5px; font-weight: 700; color: #A39C92">usado</small>
+            <b style="font-family: 'JetBrains Mono', monospace; font-size: 17px">{{d.c}}</b>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+        <button type="button" class="tool" onClick="{{split}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v18M4 7h5M15 7h5M4 17h5M15 17h5"/></svg>Dividir</button>
+        <button type="button" class="tool" onClick="{{repeatPrev}}"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 700">%</span>Repetir anterior</button>
+        <button type="button" class="tool" onClick="{{rest}}"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 700">–</span>Pausa</button>
+        <button type="button" class="tool"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 700">|: :|</span>Ritornelo</button>
+        <button type="button" class="tool"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 700">1. 2.</span>Casas</button>
+        <button type="button" class="tool"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Anotação</button>
+        <span style="flex: 1"></span>
+        <span style="font-size: 12.5px; color: #A39C92">Ou digite: <kbd style="font-family: 'JetBrains Mono', monospace; color: #F4F0EA">Am</kbd> · <kbd style="font-family: 'JetBrains Mono', monospace; color: #F4F0EA">espaço</kbd> divide · <kbd style="font-family: 'JetBrains Mono', monospace; color: #F4F0EA">Tab</kbd> próximo compasso</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1720}}'>
+var NOTES = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+var IDX = {C:0,'B#':0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,Fb:4,F:5,'E#':5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11,Cb:11};
+function tn(n, k) { var i = IDX[n]; return i == null ? n : NOTES[(i + k + 120) % 12]; }
+function tr(ch, k) {
+  if (!k || ch === '%' || ch === '-' || ch === 'N.C.') return ch;
+  var m = ch.match(/^([A-G][#b]?)([^\/]*)(?:\/([A-G][#b]?))?$/);
+  if (!m) return ch;
+  return tn(m[1], k) + m[2] + (m[3] ? '/' + tn(m[3], k) : '');
+}
+function B(c, o) { var b = { c: c.map(function (x) { return [x[0], x[1]]; }) }; o = o || {}; for (var key in o) b[key] = o[key]; return b; }
+var SECTIONS = [
+  { id: 'i', name: 'Intro', times: 4, played: 16, color: '#FF7A2F', bars: [
+    B([['E',4]], { rs: true }), B([['Gb',4]]), B([['Abm',4]], { casa: '1–3.' }), B([['%',4]], { re: true }),
+    B([['Abm',2],['D',2]], { casa: '4.' }), B([['Db',1],['Db/B',1],['-',1],['Gb',1]], { note: 'breque' })
+  ]},
+  { id: 'v', name: 'Verso', times: 1, played: 8, color: '#3DD6B5', bars: [
+    B([['Bb',4]], { lyric: 'frase 1 do verso' }), B([['Gb',2],['Ab',2]]), B([['Bbm',2],['Ab/C',2]], { lyric: 'frase 2 do verso' }), B([['Gb',2],['Ab',2]]),
+    B([['Bbm',2],['E',2]], { lyric: 'frase 3 do verso' }), B([['Gb',2],['Ab',2]]), B([['Bbm',2],['Db',2]], { lyric: 'frase 4 do verso' }), B([['Gb',2],['Ab',2]])
+  ]},
+  { id: 'p', name: 'Pré-refrão', times: 1, played: 5, color: '#8FA8FF', bars: [
+    B([['Gb',2],['Db/F',2]], { lyric: 'frase 1 do pré' }), B([['Ebm',4]]), B([['Gb',2],['Db/F',2]], { lyric: 'frase 2 do pré' }), B([['Ebm',4]]), B([['Ebm',4]], { note: 'segura' })
+  ]},
+  { id: 'r', name: 'Refrão', times: 4, played: 16, color: '#F2C14E', bars: [
+    B([['Gb',4]], { rs: true, lyric: 'refrão · 1ª vez' }), B([['Ab',4]]), B([['Bbm',4]], { lyric: 'refrão · continuação' }), B([['%',4]], { re: true, casa: '1–3.' })
+  ]}
+];
+function mmss(s) { var m = Math.floor(s / 60), r = Math.round(s % 60); return m + ':' + (r < 10 ? '0' : '') + r; }
+function chordStyle(label) {
+  var base = "font-family: 'JetBrains Mono', monospace; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; ";
+  if (label === '%') return base + 'font-size: 24px; font-weight: 500; color: #8A8379';
+  if (label === '-') return base + 'font-size: 22px; font-weight: 500; color: #8A8379';
+  return base + 'font-size: 21px; font-weight: 700; color: #F4F0EA';
+}
+function barTxt(b) {
+  var eq = b.c.every(function (x) { return x[1] === b.c[0][1]; });
+  var parts = [];
+  b.c.forEach(function (x) { parts.push(x[0]); if (!eq) for (var i = 1; i < x[1]; i++) parts.push('/'); });
+  var s = (b.casa ? b.casa.replace('–', '-') + ' ' : '') + parts.join(' ');
+  if (b.note) s += ' "' + b.note + '"';
+  return s;
+}
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { k: 0, sel: 'v-2', edits: {}, lyr: {}, mode: 'pauta' }; }
+  keys() { var out = []; SECTIONS.forEach(function (s) { s.bars.forEach(function (_, i) { out.push(s.id + '-' + i); }); }); return out; }
+  barOf(key) {
+    var p = key.split('-'), s = SECTIONS.filter(function (x) { return x.id === p[0]; })[0], i = +p[1];
+    var b = s.bars[i], st = this.state;
+    var c = st.edits[key] || b.c;
+    var lyric = st.lyr[key] != null ? st.lyr[key] : (b.lyric || '');
+    return { s: s, i: i, b: b, c: c, lyric: lyric };
+  }
+  put(chordsUntransposed) {
+    var ks = this.keys(), sel = this.state.sel, edits = Object.assign({}, this.state.edits);
+    edits[sel] = chordsUntransposed;
+    var next = ks[Math.min(ks.indexOf(sel) + 1, ks.length - 1)];
+    this.setState({ edits: edits, sel: next });
+  }
+  renderVals() {
+    var self = this, st = this.state, k = st.k;
+    var keyName = tr('Bbm', k);
+    var total = 0;
+    var sections = SECTIONS.map(function (s) {
+      var secs = s.played * 4 * 60 / 120; total += secs;
+      return {
+        name: s.name, hasTimes: s.times > 1, timesLabel: '×' + s.times,
+        meta: s.bars.length + ' compassos · ' + mmss(secs), time: mmss(secs),
+        addAria: 'Adicionar compasso em ' + s.name,
+        dot: 'width: 10px; height: 10px; border-radius: 3px; flex: none; background: ' + s.color,
+        seg: 'flex: ' + s.played + '; background: ' + s.color,
+        jump: function () { self.setState({ sel: s.id + '-0', mode: 'pauta' }); },
+        bars: s.bars.map(function (b, i) {
+          var key = s.id + '-' + i, d = self.barOf(key), isSel = st.sel === key;
+          return {
+            num: i + 1, casa: b.casa || '', note: b.note || '', rs: !!b.rs, re: !!b.re, lyric: d.lyric,
+            aria: s.name + ', compasso ' + (i + 1) + ': ' + d.c.map(function (x) { return tr(x[0], k); }).join(' '),
+            pick: function () { self.setState({ sel: key }); },
+            box: 'position: relative; display: flex; flex-direction: column; padding: 0; min-height: 120px; border-radius: 12px; text-align: left; color: inherit; font: inherit; ' +
+              (isSel ? 'border: 2px solid #FF7A2F; background-color: #211A15; box-shadow: 0 0 0 4px rgba(255,122,47,.16)' : 'border: 1px solid #2E2B27; background-color: #151412'),
+            tick: 'height: 3px; border-radius: 2px; background: ' + (isSel ? '#FF7A2F' : '#34302B'),
+            chords: d.c.map(function (x) { var l = tr(x[0], k); var st2 = chordStyle(l).replace('flex: 1', 'flex: ' + x[1]); return { label: l === '-' ? '–' : l, style: st2 }; })
+          };
+        })
+      };
+    });
+    var sd = this.barOf(st.sel);
+    var beats = [];
+    sd.c.forEach(function (x) { for (var j = 0; j < x[1]; j++) beats.push(j === 0 ? tr(x[0], k).replace('-', '–') : '·'); });
+    while (beats.length < 4) beats.push('·');
+    var root = (10 + k + 120) % 12;
+    var deg = [['i', 0, 'm'], ['III', 3, ''], ['iv', 5, 'm'], ['v', 7, 'm'], ['V', 7, ''], ['VI', 8, ''], ['VII', 10, '']];
+    var dock = deg.map(function (d) {
+      var c = NOTES[(root + d[1]) % 12] + d[2];
+      var raw = tr(c, -k);
+      return { deg: d[0], c: c, put: function () { self.put([[raw, 4]]); } };
+    });
+    var recent = ['E', 'Ab/C', 'Db/F'].map(function (c) { return { c: tr(c, k), put: function () { self.put([[c, 4]]); } }; });
+    var code = 'título: Running Up That Hill\nartista: Jorn\ntom: ' + keyName + '\nbpm: 120\ncompasso: 4/4\nformato: pauta\n';
+    SECTIONS.forEach(function (s) {
+      code += '\n[' + s.name + ']\n';
+      var bars = s.bars.map(function (b, i) { var d = self.barOf(s.id + '-' + i); var t = B(d.c.map(function (x) { return [tr(x[0], k), x[1]]; }), b); return t; });
+      for (var r = 0; r < bars.length; r += 4) {
+        var line = '', chunk = bars.slice(r, r + 4);
+        chunk.forEach(function (b) { line += (b.rs ? '|: ' : '| ') + barTxt(b) + ' '; if (b.re) line += ':| x' + s.times + ' '; });
+        if (!chunk[chunk.length - 1].re) line += '|';
+        code += line.trim() + '\n';
+      }
+      s.bars.forEach(function (b, i) { var d = self.barOf(s.id + '-' + i); if (d.lyric) code += 'voz ' + (i + 1) + ': ' + d.lyric + '\n'; });
+    });
+    var segOn = 'height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: #F4F0EA; color: #0E0D0C; font-size: 13.5px; font-weight: 700';
+    var segOff = 'height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: transparent; color: #C9C2B7; font-size: 13.5px; font-weight: 600';
+    return {
+      key: keyName, total: mmss(total), sections: sections, dock: dock, recent: recent, code: code,
+      isPauta: st.mode === 'pauta', isCodigo: st.mode === 'codigo',
+      pautaBtn: st.mode === 'pauta' ? segOn : segOff, codigoBtn: st.mode === 'codigo' ? segOn : segOff,
+      toPauta: function () { self.setState({ mode: 'pauta' }); }, toCodigo: function () { self.setState({ mode: 'codigo' }); },
+      keyUp: function () { self.setState({ k: st.k + 1 }); }, keyDown: function () { self.setState({ k: st.k - 1 }); },
+      sel: { where: sd.s.name + ' · ' + (sd.i + 1), beats: beats.map(function (c, n) { return { n: n + 1, c: c }; }), lyric: sd.lyric, note: sd.b.note || '' },
+      onLyric: function (e) { var l = Object.assign({}, st.lyr); l[st.sel] = e.target.value; self.setState({ lyr: l }); },
+      split: function () { var c = sd.c[0][0]; var e = Object.assign({}, st.edits); e[st.sel] = [[c, 2], [c, 2]]; self.setState({ edits: e }); },
+      repeatPrev: function () { self.put([['%', 4]]); },
+      rest: function () { self.put([['-', 4]]); }
+    };
+  }
+}
+</script>
+</body>
+</html>

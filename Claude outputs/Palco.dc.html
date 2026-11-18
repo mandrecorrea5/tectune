@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Tectune — Palco ao vivo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#000}
+a{color:#FF7A2F}a:hover{color:#FFA16B}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 18px 16px 20px; display: flex; flex-direction: column; gap: 16px; background: #050505; color: #F4F0EA; font-family: Archivo, system-ui, sans-serif; overflow: hidden">
+
+  <div style="display: flex; align-items: center; gap: 10px">
+    <span style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 999px; background: #0F2A24; color: #3DD6B5; font-size: 12px; font-weight: 800; letter-spacing: .06em">
+      <span aria-hidden="true" style="{{pulse}}"></span>AO VIVO
+    </span>
+    <span style="font-size: 13px; color: #C9C2B7">seguindo <b style="color: #F4F0EA">Marcos</b></span>
+    <span style="flex: 1"></span>
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #A39C92">4/12</span>
+  </div>
+
+  <div>
+    <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -.02em">Running Up That Hill</h1>
+    <p style="margin: 4px 0 0; font-size: 13.5px; color: #A39C92">Tom <b style="font-family: 'JetBrains Mono', monospace; color: #FF9A5C">{{myKey}}</b>{{keyNote}} · 120 bpm</p>
+  </div>
+
+  <div aria-label="Seções da música" style="display: flex; gap: 6px">
+    <span style="flex: 2; height: 6px; border-radius: 3px; background: #4A453F"></span>
+    <span style="flex: 1; height: 6px; border-radius: 3px; background: #4A453F"></span>
+    <span style="flex: 1; height: 6px; border-radius: 3px; background: #4A453F"></span>
+    <span style="flex: 2; height: 6px; border-radius: 3px; background: #2E2B27; overflow: hidden; display: flex"><span style="{{progress}}"></span></span>
+    <span style="flex: 2; height: 6px; border-radius: 3px; background: #2E2B27"></span>
+  </div>
+
+  <sc-if value="{{isMusico}}" hint-placeholder-val="{{ true }}">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0">
+      <div style="display: flex; align-items: baseline; gap: 8px">
+        <b style="font-size: 15px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #F2C14E">Refrão</b>
+        <span style="font-size: 13.5px; color: #C9C2B7">{{pass}}</span>
+        <span style="flex: 1"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #A39C92">compasso {{barNum}} de 4</span>
+      </div>
+
+      <div style="flex: 1; min-height: 0; border-radius: 24px; background: #FF7A2F; color: #140A03; padding: 20px 22px; display: flex; flex-direction: column">
+        <span style="font-size: 13px; font-weight: 800; letter-spacing: .06em">AGORA</span>
+        <span style="flex: 1; display: flex; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 120px; line-height: 1; font-weight: 800; letter-spacing: -.04em">{{now}}</span>
+        <div aria-label="{{beatAria}}" role="img" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+          <sc-for list="{{beats}}" as="b" hint-placeholder-count="4"><span style="{{b}}"></span></sc-for>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+        <sc-for list="{{next}}" as="n" hint-placeholder-count="3">
+          <div style="{{n.style}}">
+            <small style="font-size: 11px; font-weight: 700; color: #A39C92">{{n.label}}</small>
+            <b style="font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 800">{{n.c}}</b>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin: 0; padding: 12px 14px; border-radius: 14px; background: #141312; font-size: 13.5px; color: #F2C14E"><b>Na 4ª vez:</b> entra o coro. Depois vem o Verso 2.</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isCantor}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 18px; min-height: 0; padding-top: 6px">
+      <div style="display: flex; align-items: baseline; gap: 8px">
+        <b style="font-size: 15px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #F2C14E">Refrão</b>
+        <span style="font-size: 13.5px; color: #C9C2B7">{{pass}}</span>
+      </div>
+      <sc-for list="{{lyrics}}" as="l" hint-placeholder-count="4">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span style="{{l.chordStyle}}">{{l.chord}}</span>
+          <span style="{{l.style}}">{{l.text}}</span>
+        </div>
+      </sc-for>
+      <span style="flex: 1"></span>
+      <p style="margin: 0; padding: 12px 14px; border-radius: 14px; background: #141312; font-size: 14px; color: #C9C2B7">Próxima entrada: <b style="color: #F4F0EA">Verso 2</b>, em 8 compassos</p>
+    </div>
+  </sc-if>
+
+  <div style="display: flex; gap: 8px; align-items: center">
+    <div role="group" aria-label="Visão" style="display: flex; padding: 4px; border-radius: 12px; background: #141312; border: 1px solid #2E2B27">
+      <button type="button" onClick="{{toMusico}}" style="{{musBtn}}">Acordes</button>
+      <button type="button" onClick="{{toCantor}}" style="{{canBtn}}">Letra</button>
+    </div>
+    <span style="flex: 1"></span>
+    <div style="display: flex; align-items: center; gap: 2px; height: 52px; padding: 0 4px; border-radius: 12px; background: #141312; border: 1px solid #2E2B27">
+      <button type="button" onClick="{{myDown}}" aria-label="Descer meu tom" style="width: 44px; height: 44px; border-radius: 10px; border: 0; background: transparent; color: #F4F0EA; font-size: 20px">−</button>
+      <span style="display: flex; flex-direction: column; align-items: center; min-width: 48px">
+        <small style="font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #A39C92">MEU TOM</small>
+        <b style="font-family: 'JetBrains Mono', monospace; font-size: 14px">{{offset}}</b>
+      </span>
+      <button type="button" onClick="{{myUp}}" aria-label="Subir meu tom" style="width: 44px; height: 44px; border-radius: 10px; border: 0; background: transparent; color: #F4F0EA; font-size: 20px">+</button>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid #22201D">
+    <span style="font-size: 11.5px; font-weight: 800; letter-spacing: .06em; color: #A39C92">DEPOIS</span>
+    <b style="flex: 1; font-size: 14.5px">Garota de Ipanema</b>
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #FF9A5C">F · 128</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","options":["Acordes","Letra"],"default":"Acordes"},"$preview":{"width":390,"height":844}}'>
+var NOTES = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+var IDX = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+function tr(ch, k) {
+  if (!k || ch === '%') return ch;
+  var m = ch.match(/^([A-G][#b]?)(.*)$/);
+  return m ? NOTES[(IDX[m[1]] + k + 120) % 12] + m[2] : ch;
+}
+var BARS = ['Gb', 'Ab', 'Bbm', '%'];
+var LYR = ['refrão · frase 1', 'refrão · frase 2', 'refrão · frase 3', 'refrão · frase 4'];
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { tick: 4, k: 0, view: null }; }
+  componentDidMount() { var self = this; this.t = setInterval(function () { self.setState({ tick: self.state.tick + 1 }); }, 500); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    var self = this, st = this.state, k = st.k;
+    var view = st.view || (this.props.view === 'Letra' ? 'cantor' : 'musico');
+    var beat = st.tick % 4, bar = Math.floor(st.tick / 4) % 4, passN = 2 + (Math.floor(st.tick / 16) % 3);
+    var realNow = BARS[bar] === '%' ? BARS[bar - 1] : BARS[bar];
+    var segOn = 'height: 42px; padding: 0 14px; border-radius: 9px; border: 0; background: #F4F0EA; color: #050505; font-size: 14px; font-weight: 700';
+    var segOff = 'height: 42px; padding: 0 14px; border-radius: 9px; border: 0; background: transparent; color: #C9C2B7; font-size: 14px; font-weight: 600';
+    var next = [1, 2, 3].map(function (d) {
+      var i = (bar + d) % 4;
+      return {
+        label: d === 1 ? 'a seguir' : '+' + d,
+        c: tr(BARS[i], k),
+        style: 'height: 84px; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; padding: 0 14px; ' + (d === 1 ? 'background: #1D1B19; color: #F4F0EA' : 'background: #111010; color: #8A8379')
+      };
+    });
+    return {
+      isMusico: view === 'musico', isCantor: view === 'cantor',
+      musBtn: view === 'musico' ? segOn : segOff, canBtn: view === 'cantor' ? segOn : segOff,
+      toMusico: function () { self.setState({ view: 'musico' }); }, toCantor: function () { self.setState({ view: 'cantor' }); },
+      myKey: tr('Bbm', k), keyNote: k ? ' (original Bbm)' : '',
+      offset: (k > 0 ? '+' : '') + k,
+      myUp: function () { self.setState({ k: st.k + 1 }); }, myDown: function () { self.setState({ k: st.k - 1 }); },
+      pass: passN + 'ª vez de 4', barNum: bar + 1,
+      now: tr(realNow, k),
+      beatAria: 'Tempo ' + (beat + 1) + ' de 4',
+      beats: [0, 1, 2, 3].map(function (b) { return 'height: 14px; border-radius: 7px; background: ' + (b <= beat ? '#140A03' : 'rgba(20,10,3,.22)'); }),
+      next: next,
+      progress: 'height: 100%; background: #F2C14E; width: ' + Math.round(((bar * 4 + beat + 1) / 16) * 100) + '%',
+      pulse: 'width: 8px; height: 8px; border-radius: 50%; background: #3DD6B5; opacity: ' + (beat === 0 ? 1 : .45),
+      lyrics: LYR.map(function (t, i) {
+        var on = i === bar, past = i < bar;
+        return {
+          text: t, chord: tr(BARS[i] === '%' ? BARS[i - 1] : BARS[i], k),
+          chordStyle: "font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; color: " + (on ? '#FF9A5C' : '#6E675E'),
+          style: 'font-size: ' + (on ? '32px' : '24px') + '; line-height: 1.15; font-weight: ' + (on ? 800 : 600) + '; color: ' + (on ? '#F4F0EA' : (past ? '#6E675E' : '#A39C92'))
+        };
+      }),
+      realNow: realNow
+    };
+  }
+}
+</script>
+</body>
+</html>

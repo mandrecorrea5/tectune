@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Tectune — Show e compartilhamento</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0D0C}
+a{color:#FF7A2F}a:hover{color:#FFA16B}
+button{font-family:inherit;cursor:pointer}
+.row:hover{background:#1A1816 !important}
+.mv{width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:#A39C92;display:flex;align-items:center;justify-content:center}
+.mv:hover{background:#2A2724;color:#F4F0EA}
+.railbtn{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#A39C92;background:transparent;border:0;text-decoration:none}
+.railbtn:hover{background:#201E1B;color:#F4F0EA}
+@media (max-width:760px){.rail{flex-direction:row !important;max-width:none !important;height:64px;justify-content:space-between}}
+</style>
+</helmet>
+<div style="min-height: 1200px; display: flex; flex-wrap: wrap; background: #0E0D0C; color: #F4F0EA; font-family: Archivo, system-ui, sans-serif">
+
+  <nav class="rail" aria-label="Navegação" style="flex: 1 1 72px; max-width: 72px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 0; border-right: 1px solid #22201D; background: #0B0A09; box-sizing: border-box">
+    <div aria-label="Tectune" role="img" style="width: 28px; height: 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; margin-bottom: 16px">
+      <span style="background: #F4F0EA; border-radius: 3px"></span><span style="background: #FF7A2F; border-radius: 3px"></span><span style="background: #F4F0EA; border-radius: 3px"></span><span style="background: #F4F0EA; border-radius: 3px"></span>
+    </div>
+    <button class="railbtn" type="button" aria-label="Shows e setlists" style="background: #201E1B; color: #F4F0EA"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></button>
+    <a class="railbtn" href="Main.dc.html" aria-label="Biblioteca de músicas"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></a>
+    <button class="railbtn" type="button" aria-label="Banda"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.6 3 5.2"/></svg></button>
+    <span style="flex: 1"></span>
+    <span aria-label="Marcos Correa" role="img" style="width: 36px; height: 36px; border-radius: 50%; background: #FF7A2F; color: #1A0E05; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px">MC</span>
+  </nav>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; padding: 32px 28px; gap: 28px; box-sizing: border-box">
+
+    <!-- cabeçalho do show -->
+    <header style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end">
+      <div style="flex: 1 1 420px; min-width: 0">
+        <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #FF9A5C">Sábado, 21 de novembro · 19h · Espaço Villa</p>
+        <h1 style="margin: 0; font-size: 48px; line-height: 1.05; font-weight: 800; letter-spacing: -.03em">Casamento Ana &amp; Pedro</h1>
+        <p style="margin: 10px 0 0; font-size: 15px; color: #C9C2B7">{{count}} músicas · {{total}} de show · <span style="color: #3DD6B5; font-weight: 600">9 prontas</span>, 3 precisam de atenção</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <button type="button" style="height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #3A3530; background: transparent; color: #F4F0EA; font-size: 14px; font-weight: 600">PDF do show</button>
+        <button type="button" style="height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #3A3530; background: transparent; color: #F4F0EA; font-size: 14px; font-weight: 600">Folha do setlist</button>
+        <button type="button" style="height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #F4F0EA; color: #0E0D0C; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar música</button>
+      </div>
+    </header>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <!-- repertório -->
+      <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+        <section aria-labelledby="curva" style="padding: 18px 20px; border-radius: 16px; background: #171614; border: 1px solid #2E2B27">
+          <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px">
+            <h2 id="curva" style="margin: 0; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #A39C92">Curva de energia</h2>
+            <span style="font-size: 13px; color: #A39C92">BPM de cada música na ordem do show. Reordene e veja a curva mudar.</span>
+          </div>
+          <div role="img" aria-label="{{curveAria}}" style="display: flex; align-items: flex-end; gap: 6px; height: 96px">
+            <sc-for list="{{songs}}" as="s" hint-placeholder-count="12">
+              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #A39C92">{{s.bpm}}</span>
+                <span style="{{s.barStyle}}"></span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <ol aria-label="Ordem do show" style="list-style: none; margin: 0; padding: 0; border-radius: 16px; border: 1px solid #2E2B27; overflow: hidden">
+          <sc-for list="{{songs}}" as="s" hint-placeholder-count="12">
+            <li class="row" style="{{s.rowStyle}}">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #8A8379; width: 24px; text-align: right">{{s.n}}</span>
+              <a href="Main.dc.html" style="flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: #F4F0EA">
+                <b style="font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.title}}</b>
+                <small style="font-size: 13px; color: #A39C92">{{s.artist}}</small>
+              </a>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #FF9A5C; min-width: 44px">{{s.key}}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #C9C2B7; min-width: 64px">{{s.bpm}} bpm</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #C9C2B7; min-width: 44px">{{s.dur}}</span>
+              <span style="{{s.statusStyle}}">{{s.status}}</span>
+              <span style="display: flex; gap: 2px">
+                <button type="button" class="mv" onClick="{{s.up}}" aria-label="Subir {{s.title}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></button>
+                <button type="button" class="mv" onClick="{{s.down}}" aria-label="Descer {{s.title}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              </span>
+            </li>
+          </sc-for>
+        </ol>
+      </main>
+
+      <!-- compartilhar -->
+      <aside style="flex: 1 1 340px; max-width: 400px; display: flex; flex-direction: column; gap: 16px">
+        <section aria-labelledby="share" style="padding: 22px; border-radius: 20px; background: #F4F0EA; color: #0E0D0C; display: flex; flex-direction: column; gap: 16px">
+          <div>
+            <h2 id="share" style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.01em">Chame a banda</h2>
+            <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.45; color: #4A443D">Um link abre o show no celular de cada músico. Sem baixar app e sem criar conta.</p>
+          </div>
+          <div style="display: flex; gap: 16px; align-items: center">
+            <div role="img" aria-label="QR code do link do show" style="flex: none; width: 112px; height: 112px; padding: 8px; border-radius: 12px; background: #FFFFFF; border: 1px solid #DDD6CB; box-sizing: border-box; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1px">
+              <sc-for list="{{qr}}" as="q" hint-placeholder-count="144"><span style="{{q}}"></span></sc-for>
+            </div>
+            <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4A443D">No ensaio, mostre o QR na tela: quem apontar a câmera já entra no show.</p>
+          </div>
+          <div style="display: flex; gap: 8px">
+            <label style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #4A443D">
+              Link do show
+              <input value="tectune.com.br/s/ana-pedro" readOnly="{{ true }}" style="height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #CFC7BB; background: #FFFFFF; color: #0E0D0C; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; min-width: 0">
+            </label>
+            <button type="button" onClick="{{copy}}" style="align-self: flex-end; height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #0E0D0C; color: #F4F0EA; font-size: 14px; font-weight: 700; min-width: 96px">{{copyLabel}}</button>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button type="button" style="flex: 1; height: 44px; border-radius: 10px; border: 1px solid #CFC7BB; background: transparent; color: #0E0D0C; font-size: 14px; font-weight: 700">Enviar no WhatsApp</button>
+            <button type="button" style="flex: 1; height: 44px; border-radius: 10px; border: 1px solid #CFC7BB; background: transparent; color: #0E0D0C; font-size: 14px; font-weight: 700">Por e-mail</button>
+          </div>
+          <div role="group" aria-label="Quem abre o link pode" style="display: flex; padding: 4px; border-radius: 10px; background: #E6DFD4">
+            <button type="button" onClick="{{permView}}" style="{{viewBtn}}">Ver e tocar</button>
+            <button type="button" onClick="{{permEdit}}" style="{{editBtn}}">Também editar</button>
+          </div>
+        </section>
+
+        <section aria-labelledby="banda" style="padding: 18px; border-radius: 16px; background: #171614; border: 1px solid #2E2B27; display: flex; flex-direction: column; gap: 4px">
+          <h2 id="banda" style="margin: 0 0 8px; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #A39C92">Banda neste show</h2>
+          <sc-for list="{{band}}" as="m" hint-placeholder-count="5">
+            <div style="display: flex; align-items: center; gap: 12px; min-height: 48px">
+              <span aria-hidden="true" style="{{m.avatar}}">{{m.ini}}</span>
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+                <b style="font-size: 14.5px; font-weight: 700">{{m.name}}</b>
+                <small style="font-size: 12.5px; color: #A39C92">{{m.role}}</small>
+              </span>
+              <span style="{{m.stateStyle}}">{{m.state}}</span>
+            </div>
+          </sc-for>
+        </section>
+
+        <a href="Palco.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 56px; border-radius: 14px; background: #FF7A2F; color: #1A0E05; text-decoration: none; font-size: 16px; font-weight: 800">
+          <span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 50%; background: #1A0E05"></span>
+          Começar o show ao vivo
+        </a>
+        <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #A39C92; text-align: center">Você conduz. Quem estiver com o link aberto acompanha no mesmo compasso.</p>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+var SONGS = [
+  { id: 1, title: 'Canon in D (entrada)', artist: 'Pachelbel', key: 'D', bpm: 64, sec: 210, st: 'ok' },
+  { id: 2, title: 'Velha Infância', artist: 'Tribalistas', key: 'G', bpm: 86, sec: 250, st: 'ok' },
+  { id: 3, title: 'Ainda Bem', artist: 'Marisa Monte', key: 'Ab', bpm: 70, sec: 235, st: 'lyric' },
+  { id: 4, title: 'Running Up That Hill', artist: 'Jorn', key: 'Bbm', bpm: 120, sec: 232, st: 'ok', cur: true },
+  { id: 5, title: 'Garota de Ipanema', artist: 'Tom Jobim', key: 'F', bpm: 128, sec: 200, st: 'ok' },
+  { id: 6, title: 'Mas Que Nada', artist: 'Jorge Ben Jor', key: 'Em', bpm: 104, sec: 190, st: 'draft' },
+  { id: 7, title: 'Evidências', artist: 'Chitãozinho & Xororó', key: 'G', bpm: 74, sec: 280, st: 'ok' },
+  { id: 8, title: 'Dancing Queen', artist: 'ABBA', key: 'A', bpm: 100, sec: 230, st: 'ok' },
+  { id: 9, title: 'Uptown Funk', artist: 'Mark Ronson ft. Bruno Mars', key: 'Dm', bpm: 115, sec: 270, st: 'ok' },
+  { id: 10, title: 'Sweet Child O’ Mine', artist: 'Guns N’ Roses', key: 'Db', bpm: 125, sec: 356, st: 'lyric' },
+  { id: 11, title: 'Tempo Perdido', artist: 'Legião Urbana', key: 'A', bpm: 132, sec: 300, st: 'ok' },
+  { id: 12, title: 'Happy (saída)', artist: 'Pharrell Williams', key: 'F', bpm: 160, sec: 233, st: 'ok' }
+];
+var ST = {
+  ok: ['Pronta', '#3DD6B5', '#12302A'],
+  lyric: ['Falta letra', '#F2C14E', '#33290F'],
+  draft: ['Rascunho', '#FF9A5C', '#3A2415']
+};
+var BAND = [
+  { ini: 'MC', name: 'Marcos', role: 'Violão · diretor', c: '#FF7A2F', t: '#1A0E05', state: 'Online', on: true },
+  { ini: 'JU', name: 'Júlia', role: 'Voz', c: '#3DD6B5', t: '#06231C', state: 'Viu as 12', on: true },
+  { ini: 'RA', name: 'Rafa', role: 'Baixo', c: '#8FA8FF', t: '#0B1433', state: 'Viu 9 de 12', on: false },
+  { ini: 'BI', name: 'Bia', role: 'Teclado', c: '#F2C14E', t: '#2A1F05', state: 'Online', on: true },
+  { ini: 'LE', name: 'Léo', role: 'Bateria', c: '#3A3530', t: '#F4F0EA', state: 'Ainda não abriu', on: false }
+];
+function mmss(s) { var m = Math.floor(s / 60), r = s % 60; return m + ':' + (r < 10 ? '0' : '') + r; }
+var QR = (function () {
+  var out = [], seed = 7;
+  function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+  for (var y = 0; y < 12; y++) for (var x = 0; x < 12; x++) {
+    var fx = (x < 3 && y < 3) || (x > 8 && y < 3) || (x < 3 && y > 8);
+    var inner = (x === 1 && y === 1) || (x === 10 && y === 1) || (x === 1 && y === 10);
+    var on = fx ? !inner || true : rnd() > .52;
+    if (fx && ((x === 1 && y === 1) || (x === 10 && y === 1) || (x === 1 && y === 10))) on = true;
+    out.push('background: ' + (on ? '#0E0D0C' : 'transparent') + '; border-radius: 1px');
+  }
+  return out;
+})();
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { order: SONGS.map(function (s) { return s.id; }), copied: false, perm: 'view' }; }
+  move(i, d) {
+    var o = this.state.order.slice(), j = i + d;
+    if (j < 0 || j >= o.length) return;
+    var t = o[i]; o[i] = o[j]; o[j] = t;
+    this.setState({ order: o });
+  }
+  renderVals() {
+    var self = this, st = this.state;
+    var byId = {}; SONGS.forEach(function (s) { byId[s.id] = s; });
+    var total = 0;
+    var songs = st.order.map(function (id, i) {
+      var s = byId[id], S = ST[s.st]; total += s.sec;
+      var h = Math.round(12 + (s.bpm - 60) / (160 - 60) * 58);
+      return {
+        n: i + 1, title: s.title, artist: s.artist, key: s.key, bpm: s.bpm, dur: mmss(s.sec), status: S[0],
+        statusStyle: 'font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; min-width: 76px; text-align: center; color: ' + S[1] + '; background: ' + S[2],
+        rowStyle: 'display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 14px 10px 16px; min-height: 64px; box-sizing: border-box; border-bottom: 1px solid #22201D; ' +
+          (s.cur ? 'background: #211A15; box-shadow: inset 3px 0 0 #FF7A2F' : 'background: #151412'),
+        barStyle: 'width: 100%; max-width: 40px; border-radius: 6px 6px 2px 2px; height: ' + h + 'px; background: ' + (s.cur ? '#FF7A2F' : (s.bpm >= 115 ? '#F2C14E' : '#4A453F')),
+        up: function () { self.move(i, -1); }, down: function () { self.move(i, 1); }
+      };
+    });
+    var segOn = 'flex: 1; height: 36px; border-radius: 8px; border: 0; background: #FFFFFF; color: #0E0D0C; font-size: 13.5px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.12)';
+    var segOff = 'flex: 1; height: 36px; border-radius: 8px; border: 0; background: transparent; color: #4A443D; font-size: 13.5px; font-weight: 600';
+    return {
+      songs: songs, count: songs.length, total: Math.round(total / 60) + ' min',
+      curveAria: 'BPM em ordem: ' + songs.map(function (s) { return s.bpm; }).join(', '),
+      qr: QR,
+      copy: function () { self.setState({ copied: true }); },
+      copyLabel: st.copied ? 'Copiado' : 'Copiar',
+      viewBtn: st.perm === 'view' ? segOn : segOff, editBtn: st.perm === 'edit' ? segOn : segOff,
+      permView: function () { self.setState({ perm: 'view' }); }, permEdit: function () { self.setState({ perm: 'edit' }); },
+      band: BAND.map(function (m) {
+        return {
+          ini: m.ini, name: m.name, role: m.role, state: m.state,
+          avatar: 'width: 36px; height: 36px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; background: ' + m.c + '; color: ' + m.t,
+          stateStyle: 'font-size: 12.5px; font-weight: 600; color: ' + (m.on ? '#3DD6B5' : '#A39C92')
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
